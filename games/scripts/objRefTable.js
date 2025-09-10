@@ -9,9 +9,6 @@ self.C3_GetObjectRefTable = function () {
 		C3.Behaviors.Bullet,
 		C3.Behaviors.Rotate,
 		C3.Plugins.Shape3D,
-		C3.Behaviors.Sin,
-		C3.Plugins.Text,
-		C3.Behaviors.Anchor,
 		C3.Plugins.System.Cnds.OnLayoutStart,
 		C3.Behaviors.Rotate.Acts.SetEnabled,
 		C3.Behaviors.Bullet.Acts.SetEnabled,
@@ -23,9 +20,10 @@ self.C3_GetObjectRefTable = function () {
 		C3.Behaviors.Bullet.Acts.SetSpeed,
 		C3.Plugins.Sprite.Exps.Y,
 		C3.Plugins.Sprite.Cnds.OnCollision,
-		C3.Plugins.Text.Acts.AddInstanceVar,
-		C3.Plugins.Text.Acts.SetText,
-		C3.Plugins.Shape3D.Acts.Destroy
+		C3.Behaviors.Car.Acts.SetAcceleration,
+		C3.Behaviors.Car.Acts.SetSpeed,
+		C3.Behaviors.Car.Acts.SetMaxSpeed,
+		C3.Plugins.Sprite.Acts.Destroy
 	];
 };
 self.C3_JsPropNameTable = [
@@ -43,17 +41,11 @@ self.C3_JsPropNameTable = [
 	{Спрайт2: 0},
 	{дом: 0},
 	{Твёрдый: 0},
-	{домС: 0},
-	{домЖ: 0},
-	{Спрайт3: 0},
-	{Спрайт4: 0},
 	{"3DФигуры": 0},
-	{Синусоида: 0},
-	{Спрайт5: 0},
+	{Спрайт3: 0},
 	{"3DФигуры2": 0},
-	{сщёт: 0},
-	{Якорь: 0},
-	{Текст: 0}
+	{"3DФигуры3": 0},
+	{конистраБензинабуст: 0}
 ];
 
 self.InstanceType = {
@@ -64,12 +56,9 @@ self.InstanceType = {
 	Спрайт: class extends self.ISpriteInstance {},
 	Спрайт2: class extends self.ISpriteInstance {},
 	дом: class extends self.ISpriteInstance {},
-	домС: class extends self.I3DShapeInstance {},
-	домЖ: class extends self.I3DShapeInstance {},
-	Спрайт3: class extends self.ISpriteInstance {},
-	Спрайт4: class extends self.ISpriteInstance {},
 	_3DФигуры: class extends self.I3DShapeInstance {},
-	Спрайт5: class extends self.ISpriteInstance {},
+	Спрайт3: class extends self.ISpriteInstance {},
 	_3DФигуры2: class extends self.I3DShapeInstance {},
-	Текст: class extends self.ITextInstance {}
+	_3DФигуры3: class extends self.I3DShapeInstance {},
+	конистраБензинабуст: class extends self.ISpriteInstance {}
 }
