@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Донат через CORS-прокси</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .donate-box {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      width: 300px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-size: 22px;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #ff5b5b;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #ff2e2e;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="donate-box">
+    <h1>Сделать донат</h1>
+    <input type="number" id="amount" placeholder="Сумма (₽)" value="50" min="1">
+    <button id="donateBtn">Задонатить</button>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    const API_URL = "https://dalink.to/api/v1/payin/invoice/dalink";
+    const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
+    const USER_ID = 11573847; // ваш user_id Donationalerts
+
+    document.getElementById("donateBtn").onclick = async () => {
+      const amount = parseInt(document.getElementById("amount").value) || 1;
+      const status = document.getElementById("status");
+      status.textContent = "Создаём ссылку...";
+
+      try {
+        const res = await fetch(CORS_PROXY + API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: USER_ID,
+            amount,
+            currency: "RUB",
+            message_type: "text", // обязательно для API
+            message: ""           // можно пустым
+          })
+        });
+
+        const data = await res.json();
+        const url = data?.data?.redirect_url;
+        if(url){
+          status.textContent = "Редирект на платёжку...";
+          window.location.href = url; // редирект на платёжку
+        } else {
+          status.textContent = "Ссылка не получена";
+        }
+      } catch(err) {
+        console.error(err);
+        status.textContent = "Ошибка при создании доната!";
+      }
+    };
+  </script>
+</body>
+</html>
