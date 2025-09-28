@@ -64,7 +64,7 @@
 
   <script>
     const API_URL = "https://dalink.to/api/v1/payin/invoice/dalink";
-    const CORS_PROXY = "https://cors.bridged.cc/";
+    const CORS_PROXY = "http://193.233.103.110:3000/proxy/";
     const USER_ID = 11573847; // ваш user_id Donationalerts
 
     document.getElementById("donateBtn").onclick = async () => {
@@ -74,7 +74,7 @@
 
       try {
         const res = await fetch(CORS_PROXY + API_URL, {
-          method: "POST",
+          method: "POST", 
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             user_id: USER_ID,
