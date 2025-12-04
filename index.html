@@ -2,505 +2,593 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI-Windows V2.0 (UTF-8 Fixed)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Windows V3.1 (Minesweeper Edition)</title>
     <style>
-        /* --- CORE STYLES --- */
+        /* CSS RESET & VARIABLES */
         :root {
-            --bg-color: #111;
+            --bg: #111;
             --accent: #0078d4;
-            --glass-bg: rgba(32, 32, 32, 0.95);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --text-main: #fff;
-            --font-stack: 'Segoe UI', system-ui, sans-serif;
-            --taskbar-height: 48px;
+            --glass: rgba(30, 30, 30, 0.95);
+            --border: rgba(255, 255, 255, 0.15);
+            --text: #fff;
+            --font: 'Segoe UI', sans-serif;
         }
-
-        * { box-sizing: border-box; user-select: none; outline: none; }
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: var(--font-stack); background: #000; color: var(--text-main); }
+        * { box-sizing: border-box; user-select: none; }
+        body { margin: 0; height: 100vh; overflow: hidden; font-family: var(--font); background: #000; color: var(--text); }
         .hidden { display: none !important; }
-        .col { display: flex; flex-direction: column; }
-        .row { display: flex; flex-direction: row; }
-        .center { display: flex; align-items: center; justify-content: center; }
-
-        /* --- LAYERS --- */
-        #bios { position: fixed; inset: 0; background: #000; z-index: 9999; padding: 40px; font-family: monospace; color: #fff; display: flex; flex-direction: column; }
-        #login-screen { position: fixed; inset: 0; z-index: 8000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s; }
-        #desktop { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
-        #wallpaper-canvas { position: absolute; inset: 0; z-index: -1; }
-
-        /* --- UI ELEMENTS --- */
-        .user-avatar { width: 120px; height: 120px; background: #333; border-radius: 50%; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; font-size: 40px; border: 2px solid var(--accent); box-shadow: 0 0 30px var(--accent); }
-        .login-input { padding: 10px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; width: 200px; margin-bottom: 10px; text-align: center; font-size: 16px; letter-spacing: 2px; }
-        .login-btn { padding: 8px 20px; background: var(--accent); color: #fff; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
-
-        /* Icons */
-        #desktop-icons { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 10px; height: 90%; flex-wrap: wrap; align-content: flex-start; }
-        .d-icon { width: 84px; display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 8px 5px; border-radius: 4px; text-align: center; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.8); transition: 0.1s; }
-        .d-icon:hover { background: rgba(255,255,255,0.1); }
-        .d-icon.selected { background: rgba(255,255,255,0.2); border: 1px dotted rgba(255,255,255,0.5); }
-        .d-icon svg { width: 40px; height: 40px; margin-bottom: 4px; drop-shadow: 0 2px 5px rgba(0,0,0,0.6); }
-
-        /* Windows Logic */
-        .window { position: absolute; background: var(--glass-bg); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 8px; box-shadow: 0 20px 50px rgba(0,0,0,0.7); display: flex; flex-direction: column; overflow: hidden; min-width: 300px; min-height: 200px; transition: width 0.2s, height 0.2s, top 0.2s, left 0.2s; }
         
-        .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100% - 48px) !important; border-radius: 0; }
-        .window.minimized { transform: scale(0.5) translateY(500px); opacity: 0; pointer-events: none; }
-        .window.active { border: 1px solid rgba(255,255,255,0.25); box-shadow: 0 25px 60px rgba(0,0,0,0.9); }
+        /* WALLPAPER */
+        #wallpaper { position: absolute; inset: 0; z-index: 0; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); }
 
-        .win-header { height: 36px; background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; cursor: default; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .win-title { font-size: 13px; display: flex; align-items: center; gap: 8px; pointer-events: none; }
-        .win-controls { display: flex; gap: 8px; }
-        .win-btn { width: 12px; height: 12px; border-radius: 50%; border: none; cursor: pointer; }
-        .btn-close { background: #ff5f56; } .btn-min { background: #ffbd2e; } .btn-max { background: #27c93f; }
-        .win-content { flex: 1; overflow: hidden; position: relative; display: flex; flex-direction: column; background: #1a1a1a; }
+        /* LOGIN */
+        #login { position: fixed; inset: 0; z-index: 9000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .avatar { width: 100px; height: 100px; background: #444; border-radius: 50%; margin-bottom: 20px; display:flex; justify-content:center; align-items:center; font-size:40px; border:2px solid var(--accent); }
+        input { padding: 10px; background: #222; border: 1px solid #555; color: white; text-align: center; margin-bottom: 10px; border-radius: 5px; }
+        button { padding: 8px 20px; background: var(--accent); border: none; color: white; cursor: pointer; border-radius: 5px; }
 
-        /* Taskbar */
-        #taskbar { position: absolute; bottom: 0; left: 0; right: 0; height: var(--taskbar-height); background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; z-index: 5000; border-top: 1px solid rgba(255,255,255,0.1); }
-        .tb-part { display: flex; align-items: center; gap: 6px; height: 100%; }
-        .tb-btn { width: 42px; height: 40px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; position: relative; }
+        /* DESKTOP */
+        #desktop { position: absolute; inset: 0; z-index: 1; }
+        .icon-grid { padding: 10px; display: flex; flex-direction: column; gap: 10px; flex-wrap: wrap; height: 90vh; align-content: flex-start; }
+        .icon { width: 80px; text-align: center; padding: 10px 5px; border-radius: 5px; cursor: pointer; color: white; text-shadow: 0 1px 2px black; }
+        .icon:hover { background: rgba(255,255,255,0.1); }
+        .icon svg { width: 40px; height: 40px; margin-bottom: 5px; }
+
+        /* WINDOWS */
+        .window { position: absolute; background: var(--glass); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.5); min-width: 300px; min-height: 200px; overflow: hidden; }
+        .window.active { border-color: #666; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+        
+        .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100% - 48px) !important; border-radius: 0; transform: none !important; }
+        .window.minimized { display: none; }
+
+        .win-head { height: 32px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; padding: 0 10px; cursor: default; }
+        .win-title { font-size: 13px; pointer-events: none; }
+        .win-btns { display: flex; gap: 8px; }
+        .wb { width: 12px; height: 12px; border-radius: 50%; border: none; cursor: pointer; }
+        .wb.close { background: #ff5f56; } .wb.min { background: #ffbd2e; } .wb.max { background: #27c93f; }
+
+        .win-body { flex: 1; position: relative; overflow: hidden; background: #111; display: flex; flex-direction: column; }
+
+        /* TASKBAR */
+        #taskbar { position: absolute; bottom: 0; width: 100%; height: 48px; background: rgba(20,20,20,0.95); display: flex; align-items: center; padding: 0 10px; z-index: 5000; border-top: 1px solid #333; }
+        .tb-btn { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border-radius: 5px; cursor: pointer; margin-right: 4px; }
         .tb-btn:hover { background: rgba(255,255,255,0.1); }
-        .tb-btn.running::after { content: ''; position: absolute; bottom: 3px; width: 16px; height: 3px; background: #aaa; border-radius: 2px; }
-        .tb-btn.active-win { background: rgba(255,255,255,0.15); }
-        .tb-btn.active-win::after { background: var(--accent); width: 24px; }
-        .tb-clock { font-size: 12px; text-align: right; color: #ddd; cursor: default; }
-
-        /* Start Menu */
-        #start-menu { position: absolute; bottom: 55px; left: 10px; width: 420px; height: 520px; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(25px); border-radius: 8px; border: 1px solid var(--glass-border); z-index: 4999; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: 0.2s; transform: translateY(20px); padding: 20px; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        #start-menu.open { opacity: 1; pointer-events: all; transform: translateY(0); }
-        .start-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding-top: 20px; }
-        .start-item { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; padding: 12px; border-radius: 6px; transition: 0.2s; }
+        .tb-btn.active { background: rgba(255,255,255,0.2); border-bottom: 3px solid var(--accent); }
+        
+        /* START MENU */
+        #start { position: absolute; bottom: 50px; left: 10px; width: 350px; background: rgba(30,30,30,0.98); border: 1px solid #444; border-radius: 8px; padding: 15px; display: none; z-index: 4999; }
+        #start.show { display: block; }
+        .start-item { padding: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-radius: 5px; }
         .start-item:hover { background: rgba(255,255,255,0.1); }
 
-        /* Explorer */
-        .exp-bar { height: 42px; background: #252525; display: flex; align-items: center; padding: 0 10px; gap: 10px; border-bottom: 1px solid #333; }
-        .exp-btn { background: transparent; border: none; color: #fff; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .exp-btn:hover { background: rgba(255,255,255,0.1); }
-        .exp-path-input { flex: 1; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 5px 12px; border-radius: 4px; font-size: 13px; font-family: monospace; }
-        .exp-body { display: flex; height: 100%; }
-        .exp-side { width: 170px; background: #202020; border-right: 1px solid #333; padding: 10px 0; font-size: 13px; }
-        .exp-link { padding: 8px 15px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-        .exp-link:hover { background: rgba(255,255,255,0.05); }
-        .exp-view { flex: 1; padding: 10px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); grid-auto-rows: 100px; gap: 5px; background: #111; }
-        .exp-item { display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 1px solid transparent; border-radius: 4px; padding: 5px; color: #eee; text-align: center; }
-        .exp-item:hover { background: rgba(255,255,255,0.08); }
-        .exp-item.selected { background: rgba(0, 120, 212, 0.2); border-color: rgba(0, 120, 212, 0.5); }
+        /* MINESWEEPER STYLES */
+        .ms-container { background: #c0c0c0; color: black; height: 100%; padding: 10px; display: flex; flex-direction: column; align-items: center; border: 2px solid; border-color: #fff #808080 #808080 #fff; }
+        .ms-header { background: #c0c0c0; border: 2px solid; border-color: #808080 #fff #fff #808080; width: 100%; display: flex; justify-content: space-between; padding: 5px; margin-bottom: 10px; }
+        .ms-counter { background: #000; color: #f00; font-family: monospace; font-size: 20px; padding: 2px 5px; width: 50px; text-align: center; }
+        .ms-face { width: 26px; height: 26px; background: #c0c0c0; border: 2px outset #fff; display: flex; justify-content: center; align-items: center; cursor: pointer; font-weight: bold; font-size: 18px; }
+        .ms-face:active { border-style: inset; }
+        .ms-grid { display: grid; grid-template-columns: repeat(9, 25px); gap: 0; border: 3px solid; border-color: #808080 #fff #fff #808080; }
+        .ms-cell { width: 25px; height: 25px; background: #c0c0c0; border: 2px outset #fff; cursor: pointer; display: flex; justify-content: center; align-items: center; font-weight: bold; font-family: monospace; font-size: 14px; user-select: none; }
+        .ms-cell:active { border: 1px solid #808080; }
+        .ms-cell.open { border: 1px solid #808080; border-right: none; border-bottom: none; background: #c0c0c0; color: #000; }
+        .ms-cell.flag { color: red; }
+        .ms-cell.mine { background: red; color: black; }
+        
+        /* Colors for numbers */
+        .c1 { color: blue; } .c2 { color: green; } .c3 { color: red; } .c4 { color: darkblue; } .c5 { color: darkred; }
 
-        /* Browser & GitHub UI */
-        .browser-bar { height: 44px; background: #2b2b2b; display: flex; align-items: center; padding: 0 10px; gap: 8px; border-bottom: 1px solid #444; }
-        .browser-input { flex: 1; background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 6px 15px; border-radius: 20px; font-size: 13px; }
-        .browser-content { flex: 1; background: #0d1117; color: #c9d1d9; position: relative; overflow-y: auto; }
-        .gh-container { max-width: 800px; margin: 0 auto; padding: 20px; }
-        .gh-header { border-bottom: 1px solid #30363d; padding-bottom: 20px; margin-bottom: 20px; }
-        .gh-stats { display: flex; gap: 15px; font-size: 14px; color: #8b949e; margin-top: 10px; }
-        .gh-file-list { background: #161b22; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; }
-        .gh-file-row { display: flex; padding: 10px 15px; border-bottom: 1px solid #30363d; cursor: pointer; font-size: 14px; align-items: center; gap: 10px; }
-        .gh-file-row:last-child { border-bottom: none; }
-        .gh-file-row:hover { background: #21262d; }
-        .gh-readme { margin-top: 30px; border: 1px solid #30363d; border-radius: 6px; padding: 20px; background: #0d1117; }
-        .gh-code-view { padding: 20px; font-family: monospace; white-space: pre-wrap; color: #e6edf3; font-size: 13px; word-break: break-all; }
-
-        .notepad-area { flex: 1; background: #1e1e1e; color: #e0e0e0; border: none; padding: 15px; font-family: 'Consolas', monospace; resize: none; }
-        .set-layout { display: flex; height: 100%; background: #111; }
-        .set-side { width: 180px; background: rgba(255,255,255,0.03); padding: 20px 10px; }
-        .set-tab { padding: 10px 15px; cursor: pointer; border-radius: 4px; font-size: 14px; margin-bottom: 5px; }
-        .set-tab.active { background: rgba(255,255,255,0.1); border-left: 3px solid var(--accent); }
-        .color-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
-
-        svg { pointer-events: none; fill: currentColor; }
+        /* BROWSER STYLES */
+        .browser-nav { padding: 8px; background: #333; display: flex; gap: 5px; }
+        .browser-url { flex: 1; padding: 5px 10px; border-radius: 20px; border: none; background: #111; color: white; }
+        .gh-file { padding: 8px; border-bottom: 1px solid #333; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .gh-file:hover { background: #222; }
+        .code-view { padding: 15px; white-space: pre-wrap; font-family: monospace; user-select: text; color: #ddd; }
+        .readme { padding: 20px; background: #0d1117; border: 1px solid #333; margin: 10px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-    <!-- BOOT -->
-    <div id="bios">
-        <div style="color:var(--accent); font-weight:bold; font-size:24px; margin-bottom:20px;">AI-BIOS v2.3</div>
-        <div id="bios-log">Initializing UTF-8 Decoder...</div>
-        <div style="width:300px; height:6px; background:#333; margin-top:20px; border-radius:3px; overflow:hidden;">
-            <div id="bios-bar" style="height:100%; background:var(--accent); width:0%"></div>
-        </div>
+    <!-- 1. BOOT / LOGIN -->
+    <div id="login">
+        <div class="avatar">👤</div>
+        <h3>AI User</h3>
+        <input type="password" id="pass" placeholder="PIN: 1234">
+        <button onclick="System.login()">Log In</button>
+        <div id="error-log" style="color:red; margin-top:20px; font-size:12px; max-width:80%;"></div>
     </div>
 
-    <!-- LOGIN -->
-    <div id="login-screen" class="hidden">
-        <div class="user-avatar">👤</div>
-        <h2 style="color:#fff; font-weight:400; margin-bottom:20px;">AI User</h2>
-        <input type="password" class="login-input" id="login-pass" placeholder="PIN: 1234">
-        <button class="login-btn" onclick="OS.auth()">Log In</button>
+    <!-- 2. DESKTOP -->
+    <div id="wallpaper"></div>
+    <div id="desktop">
+        <div class="icon-grid" id="icons"></div>
+        <div id="windows"></div>
     </div>
 
-    <!-- DESKTOP -->
-    <div id="desktop" class="hidden">
-        <canvas id="wallpaper-canvas"></canvas>
-        <div id="desktop-icons"></div>
-        <div id="window-area"></div>
-    </div>
-
-    <!-- TASKBAR -->
-    <div id="taskbar" class="hidden">
-        <div class="tb-part">
-            <div class="tb-btn" onclick="OS.ui.toggleStart()" title="Start">
-                <svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 4h16v16H4V4zm2 2v12h12V6H6z" fill="#fff"/></svg>
-            </div>
-            <div id="tb-apps" class="row" style="gap:2px"></div>
+    <!-- 3. INTERFACE -->
+    <div id="start"></div>
+    <div id="taskbar">
+        <div class="tb-btn" onclick="System.toggleStart()" title="Start">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M3 3h18v18H3z"/></svg>
         </div>
-        <div class="tb-part">
-            <div class="tb-clock" id="clock">12:00</div>
-        </div>
-    </div>
-
-    <!-- START MENU -->
-    <div id="start-menu">
-        <div style="margin-bottom:10px; font-weight:bold; font-size:13px; color:#ccc;">Pinned Apps</div>
-        <div class="start-grid" id="start-grid"></div>
-        <div style="margin-top:auto; padding-top:15px; border-top:1px solid #444; display:flex; justify-content:space-between; align-items:center;">
-            <div class="center" style="gap:10px;">
-                <div style="width:28px; height:28px; background:#555; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:12px;">AI</div>
-                <span style="font-size:13px;">AI User</span>
-            </div>
-            <div class="tb-btn" style="width:36px; height:36px;" onclick="location.reload()" title="Power Off">⏻</div>
-        </div>
+        <div id="dock" style="display:flex;"></div>
+        <div style="margin-left:auto; font-size:12px; color:#aaa;" id="clock">12:00</div>
     </div>
 
     <script>
-    // --- ICONS ---
-    const ICONS = {
-        pc: '<svg viewBox="0 0 24 24" fill="#50e6ff"><path d="M2 4h18v14H2V4zm2 2v10h14V6H4zm3 14h10v2H7v-2z"/></svg>',
-        folder: '<svg viewBox="0 0 24 24" fill="#fce566"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>',
-        file: '<svg viewBox="0 0 24 24" fill="#fff"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>',
-        notepad: '<svg viewBox="0 0 24 24" fill="#00dcb4"><path d="M15 6H3v14h18V10l-6-4zm-1 9h-4v-2h4v2zm0-4h-4V9h4v2zM5 8h8v2H5V8zm0 4h3v2H5v-2zm0 4h8v2H5v-2z"/></svg>',
-        browser: '<svg viewBox="0 0 24 24" fill="#369eff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>',
-        github: '<svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12c0-5.523-4.477-10-10-10z"/></svg>',
-        repo: '<svg viewBox="0 0 24 24" fill="#6CC644"><path d="M4 18.5v-13C4 4.12 5.12 3 6.5 3h11C18.88 3 20 4.12 20 5.5v13c0 1.38-1.12 2.5-2.5 2.5h-11C5.12 21 4 19.88 4 18.5zM6.5 5c-.28 0-.5.22-.5.5v13c0 .28.22.5.5.5h11c.28 0 .5-.22.5-.5v-13c0-.28-.22-.5-.5-.5h-11z"/></svg>'
-    };
+        // GLOBAL ERROR HANDLER
+        window.onerror = function(msg, url, line) {
+            document.getElementById('error-log').innerText = "System Error: " + msg + " line " + line;
+            alert("System Error:\n" + msg);
+        };
 
-    // --- SYSTEM CORE ---
-    const OS = {
-        windows: [],
-        zIndex: 100,
-        fs: {
-            "C:": { children: { "Documents":{children:{}}, "Downloads":{children:{}} } }
-        },
+        // --- ICONS (SVG) ---
+        const ICONS = {
+            pc: '<svg viewBox="0 0 24 24" fill="#50e6ff"><path d="M2 4h18v14H2V4zm2 2v10h14V6H4zm3 14h10v2H7v-2z"/></svg>',
+            browser: '<svg viewBox="0 0 24 24" fill="#369eff"><circle cx="12" cy="12" r="10"/></svg>',
+            github: '<svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.47 2 2 6.47 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.21.68-.48v-1.71c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.1 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.1.39-2 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.56 9.56 0 015 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.69 1.03 1.59 1.03 2.69 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.75c0 .27.18.58.69.48A10.02 10.02 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>',
+            mine: '<svg viewBox="0 0 24 24" fill="#000"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20" stroke="#fff" stroke-width="2"/></svg>'
+        };
 
-        init: function() {
-            let p=0; const b=document.getElementById('bios-bar'), l=document.getElementById('bios-log');
-            const t=setInterval(()=>{
-                p+=5; b.style.width=p+'%';
-                if(p==40) l.innerText="Loading Modules...";
-                if(p==80) l.innerText="Starting UI...";
-                if(p>=100){ clearInterval(t); document.getElementById('bios').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden'); }
-            }, 50);
-            this.wallpaper.init(); this.ui.clock();
-        },
+        // --- SYSTEM OBJECT ---
+        const System = {
+            wins: [],
+            z: 100,
 
-        auth: function() {
-            if(document.getElementById('login-pass').value==='1234') {
-                const l=document.getElementById('login-screen');
-                l.style.opacity=0; setTimeout(()=>{ l.classList.add('hidden'); document.getElementById('desktop').classList.remove('hidden'); document.getElementById('taskbar').classList.remove('hidden'); this.renderDesktop(); },500);
-            } else alert('Try 1234');
-        },
-
-        wm: {
-            open: function(app, title, html, icon, w=800, h=500) {
-                const id='win-'+Date.now();
-                const el=document.createElement('div');
-                el.className='window active'; el.id=id;
-                el.style.width=w+'px'; el.style.height=h+'px';
-                el.style.top=(50+OS.windows.length*20)+'px'; el.style.left=(50+OS.windows.length*20)+'px';
-                el.style.zIndex=++OS.zIndex;
-                el.innerHTML=`<div class="win-header" onmousedown="OS.wm.drag(event,'${id}')"><div class="win-title">${icon} ${title}</div><div class="win-controls"><button class="win-btn btn-min" onclick="OS.wm.min('${id}')"></button><button class="win-btn btn-max" onclick="OS.wm.max('${id}')"></button><button class="win-btn btn-close" onclick="OS.wm.close('${id}')"></button></div></div><div class="win-content">${html}</div>`;
-                el.onmousedown=()=>OS.wm.focus(id);
-                document.getElementById('window-area').appendChild(el);
-                
-                const tb=document.createElement('div');
-                tb.className='tb-btn running active-win'; tb.id='tb-'+id; tb.innerHTML=icon; tb.onclick=()=>OS.wm.toggle(id);
-                document.getElementById('tb-apps').appendChild(tb);
-                OS.windows.push({id, el, tb, isMaximized: false});
-                return id;
-            },
-            close: function(id) {
-                const w=OS.windows.find(x=>x.id===id);
-                if(w) { w.el.remove(); w.tb.remove(); OS.windows=OS.windows.filter(x=>x.id!==id); }
-            },
-            focus: function(id) {
-                const w=OS.windows.find(x=>x.id===id);
-                if(w) {
-                    w.el.style.zIndex=++OS.zIndex;
-                    OS.windows.forEach(i=>{i.el.classList.remove('active'); i.tb.classList.remove('active-win')});
-                    w.el.classList.add('active'); w.tb.classList.add('active-win'); w.el.classList.remove('minimized');
-                }
-            },
-            min: function(id){ const w=OS.windows.find(x=>x.id===id); w.el.classList.add('minimized'); w.el.classList.remove('active'); w.tb.classList.remove('active-win'); },
-            max: function(id){ 
-                const w = OS.windows.find(x => x.id === id);
-                if(w.isMaximized) {
-                    w.el.classList.remove('maximized');
-                    w.isMaximized = false;
+            // LOGIN
+            login: function() {
+                const p = document.getElementById('pass').value;
+                if(p === '1234') {
+                    document.getElementById('login').style.display = 'none';
+                    this.initDesktop();
                 } else {
-                    w.el.classList.add('maximized');
-                    w.isMaximized = true;
+                    alert('Wrong PIN (Use 1234)');
                 }
             },
-            toggle: function(id){ const w=OS.windows.find(x=>x.id===id); if(w.el.classList.contains('minimized')||!w.el.classList.contains('active')) OS.wm.focus(id); else OS.wm.min(id); },
-            drag: function(e,id){
-                if(e.target.tagName==='BUTTON') return;
-                const win=document.getElementById(id);
-                if(win.classList.contains('maximized')) return;
-                let offX=e.clientX-win.getBoundingClientRect().left, offY=e.clientY-win.getBoundingClientRect().top;
-                const m=(ev)=>{win.style.left=(ev.clientX-offX)+'px'; win.style.top=(ev.clientY-offY)+'px';};
-                const u=()=>{document.removeEventListener('mousemove',m); document.removeEventListener('mouseup',u);};
-                document.addEventListener('mousemove',m); document.addEventListener('mouseup',u);
-            }
-        },
 
-        apps: {
-            explorer: {
-                run: function() {
-                    const html=`
-                    <div class="col" style="height:100%">
-                        <div class="exp-bar">
-                            <button class="exp-btn">↑</button>
-                            <input class="exp-path-input" value="C:" onkeydown="if(event.key==='Enter') OS.apps.explorer.go(this)">
-                        </div>
-                        <div class="exp-body">
-                            <div class="exp-side">
-                                <div class="exp-link" onclick="OS.apps.explorer.go(this,'C:')">${ICONS.pc} This PC</div>
-                                <div class="exp-link" onclick="OS.apps.explorer.go(this,'github:/maybeoff')">${ICONS.github} GitHub</div>
-                            </div>
-                            <div class="exp-view"></div>
-                        </div>
-                    </div>`;
-                    const id=OS.wm.open('explorer','Explorer',html,ICONS.pc);
-                    document.getElementById(id).dataset.path=JSON.stringify(['C:']);
-                    OS.apps.explorer.refresh(document.getElementById(id));
-                },
-                refresh: function(win) {
-                    const path=JSON.parse(win.dataset.path);
-                    const view=win.querySelector('.exp-view');
-                    win.querySelector('.exp-path-input').value=path.join('/');
-                    view.innerHTML='';
-
-                    if(path[0]==='github:') {
-                        const user = path[1] || 'maybeoff';
-                        view.innerHTML = `<div style="padding:20px;text-align:center">Loading repos for ${user}...</div>`;
-                        fetch(`https://api.github.com/users/${user}/repos`)
-                        .then(r=>r.json()).then(data=>{
-                            view.innerHTML='';
-                            if(!Array.isArray(data)) { view.innerHTML='<div style="padding:20px">User not found</div>'; return; }
-                            data.forEach(r=>{
-                                const i=document.createElement('div');
-                                i.className='exp-item';
-                                i.innerHTML=`<div style="width:40px">${ICONS.repo}</div><span>${r.name}</span>`;
-                                i.ondblclick=()=>OS.apps.browser.runRepo(user, r.name);
-                                view.appendChild(i);
-                            });
-                        }).catch(()=>view.innerHTML='Error fetching GitHub');
-                        return;
-                    }
-
-                    // Local FS
-                    let dir=OS.fs;
-                    for(let p of path) if(dir[p] && dir[p].children) dir=dir[p].children; else dir=null;
-                    if(dir) {
-                        for(let k in dir) {
-                            const i=document.createElement('div'); i.className='exp-item';
-                            i.innerHTML=`<div style="width:40px">${ICONS.folder}</div><span>${k}</span>`;
-                            view.appendChild(i);
-                        }
-                    }
-                },
-                go: function(t, p) {
-                    const win=t.closest('.window');
-                    if(p) win.dataset.path=JSON.stringify(p.split('/'));
-                    else win.dataset.path=JSON.stringify(t.value.split('/'));
-                    OS.apps.explorer.refresh(win);
-                }
-            },
-            browser: {
-                run: function() { this.runUrl('ai://home'); },
-                runUrl: function(url) {
-                    const html=`
-                    <div class="col" style="height:100%">
-                        <div class="browser-bar">
-                            <button class="exp-btn" onclick="OS.apps.browser.home(this)">Home</button>
-                            <input class="browser-input" value="${url}" onkeydown="if(event.key==='Enter') OS.apps.browser.load(this)">
-                        </div>
-                        <div class="browser-content"></div>
-                    </div>`;
-                    const id=OS.wm.open('browser','Browser',html,ICONS.browser);
-                    this.render(document.getElementById(id), url);
-                },
-                runRepo: function(user, repo) {
-                    this.runUrl(`https://github.com/${user}/${repo}`);
-                },
-                load: function(inp) { this.render(inp.closest('.window'), inp.value); },
-                home: function(btn) { this.render(btn.closest('.window'), 'ai://home'); },
+            // DESKTOP RENDER
+            initDesktop: function() {
+                const icons = [
+                    { name: "My PC", icon: ICONS.pc, action: 'explorer' },
+                    { name: "GitHub", icon: ICONS.github, action: 'github' },
+                    { name: "Browser", icon: ICONS.browser, action: 'browser' },
+                    { name: "Minesweeper", icon: ICONS.mine, action: 'mines' }
+                ];
                 
-                // --- UTF-8 DECODER ---
-                decode: function(base64) {
-                    try {
-                        const clean = base64.replace(/\s/g, ''); // Fix for newlines in GitHub API
-                        const binary = atob(clean);
-                        const bytes = new Uint8Array(binary.length);
-                        for (let i = 0; i < binary.length; i++) {
-                            bytes[i] = binary.charCodeAt(i);
-                        }
-                        return new TextDecoder('utf-8').decode(bytes);
-                    } catch(e) { return "Encoding Error"; }
-                },
+                const grid = document.getElementById('icons');
+                const start = document.getElementById('start');
+                
+                icons.forEach(app => {
+                    const el = document.createElement('div');
+                    el.className = 'icon';
+                    el.innerHTML = `${app.icon}<div>${app.name}</div>`;
+                    el.ondblclick = () => Apps.launch(app.action);
+                    grid.appendChild(el);
 
-                render: function(win, url) {
-                    const v=win.querySelector('.browser-content');
-                    const inp=win.querySelector('.browser-input');
-                    inp.value=url;
-                    v.innerHTML='<div style="padding:20px;text-align:center">Loading...</div>';
+                    const item = document.createElement('div');
+                    item.className = 'start-item';
+                    item.innerHTML = `${app.icon} ${app.name}`;
+                    item.onclick = () => { Apps.launch(app.action); this.toggleStart(); };
+                    start.appendChild(item);
+                });
 
-                    if(url === 'ai://home') {
-                        v.innerHTML=`<div class="gh-container" style="text-align:center; margin-top:50px">
-                            <h1>AI Browser</h1><p>Type a URL or search GitHub.</p>
-                            <div style="margin-top:20px; display:flex; gap:10px; justify-content:center">
-                                <span class="d-icon" onclick="OS.apps.browser.render(this.closest('.window'),'https://github.com/maybeoff')">${ICONS.github}<br>GitHub</span>
-                            </div>
-                        </div>`;
-                        return;
-                    }
+                setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), 1000);
+            },
 
-                    if(url.includes('github.com')) {
-                        const parts = url.split('github.com/')[1].split('/');
-                        const user = parts[0];
-                        const repo = parts[1];
-                        if(repo) {
-                            this.fetchGitHubRepo(v, user, repo);
-                        } else {
-                            this.fetchGitHubUser(v, user);
-                        }
-                        return;
-                    }
+            toggleStart: function() {
+                document.getElementById('start').classList.toggle('show');
+            },
 
-                    if(!url.startsWith('http')) url='https://'+url;
-                    v.innerHTML=`<iframe src="${url}" style="width:100%;height:100%;border:none;background:#fff"></iframe>`;
-                },
+            // WINDOW MANAGEMENT
+            openWindow: function(title, html, width='800px', height='500px') {
+                const id = 'w-' + Date.now();
+                const win = document.createElement('div');
+                win.className = 'window active';
+                win.id = id;
+                win.style.left = (50 + this.wins.length * 30) + 'px';
+                win.style.top = (50 + this.wins.length * 30) + 'px';
+                win.style.width = width;
+                win.style.height = height;
+                win.style.zIndex = ++this.z;
 
-                fetchGitHubRepo: function(container, user, repo) {
-                    const apiUrl = `https://api.github.com/repos/${user}/${repo}`;
-                    Promise.all([
-                        fetch(apiUrl).then(r=>r.json()),
-                        fetch(apiUrl+'/contents').then(r=>r.json()),
-                        fetch(apiUrl+'/readme').then(r=>r.json())
-                    ]).then(([info, files, readme]) => {
-                        let fileList = '';
-                        if(Array.isArray(files)) {
-                            files.sort((a,b) => (a.type === b.type ? 0 : a.type === 'dir' ? -1 : 1));
-                            files.forEach(f => {
-                                fileList += `<div class="gh-file-row" onclick="OS.apps.browser.viewFile(this, '${f.url}')">
-                                    <span style="color:${f.type==='dir'?'#50e6ff':'#fff'}">${f.type==='dir'?'📁':'📄'}</span> ${f.name}
-                                </div>`;
-                            });
-                        }
+                win.innerHTML = `
+                    <div class="win-head" onmousedown="System.dragStart(event, '${id}')">
+                        <div class="win-title">${title}</div>
+                        <div class="win-btns">
+                            <button class="wb min" onclick="System.min('${id}')"></button>
+                            <button class="wb max" onclick="System.max('${id}')"></button>
+                            <button class="wb close" onclick="System.close('${id}')"></button>
+                        </div>
+                    </div>
+                    <div class="win-body">${html}</div>
+                `;
 
-                        let readmeHtml = '';
-                        if(readme.content) {
-                            const text = this.decode(readme.content);
-                            readmeHtml = `<div class="gh-readme"><h3>README.md</h3><pre style="white-space:pre-wrap;color:#aaa">${text}</pre></div>`;
-                        }
+                win.onmousedown = () => System.focus(id);
+                document.getElementById('windows').appendChild(win);
 
-                        container.innerHTML = `
-                        <div class="gh-container">
-                            <div class="gh-header">
-                                <h2>${ICONS.repo} <span style="color:#58a6ff">${user}</span> / <span style="font-weight:bold">${repo}</span></h2>
-                                <p>${info.description || 'No description'}</p>
-                            </div>
-                            <div class="gh-file-list">${fileList}</div>
-                            ${readmeHtml}
-                        </div>`;
-                    }).catch(e => {
-                        container.innerHTML = `<div style="padding:20px; color:#ff5f56">API Error: ${e.message}<br>Maybe rate limited?</div>`;
-                    });
-                },
+                const btn = document.createElement('div');
+                btn.className = 'tb-btn active';
+                btn.id = 'tb-' + id;
+                btn.innerHTML = ICONS.browser; 
+                btn.onclick = () => System.toggle(id);
+                document.getElementById('dock').appendChild(btn);
 
-                fetchGitHubUser: function(container, user) {
-                    fetch(`https://api.github.com/users/${user}/repos`).then(r=>r.json()).then(data => {
-                        let html = `<div class="gh-container"><h1>${user} Repositories</h1><div class="gh-file-list">`;
-                        data.forEach(r => {
-                            html += `<div class="gh-file-row" onclick="OS.apps.browser.runRepo('${user}','${r.name}')">
-                                <span>📦</span> <b>${r.name}</b> <span style="margin-left:auto;color:#888">⭐ ${r.stargazers_count}</span>
-                            </div>`;
-                        });
-                        html += '</div></div>';
+                this.wins.push(id);
+                return id; 
+            },
+
+            close: function(id) {
+                document.getElementById(id).remove();
+                document.getElementById('tb-' + id).remove();
+                this.wins = this.wins.filter(x => x !== id);
+                // Clean up Minesweeper timer if exists
+                if(Apps.minesweeper.timers[id]) clearInterval(Apps.minesweeper.timers[id]);
+            },
+
+            min: function(id) {
+                document.getElementById(id).classList.add('minimized');
+                document.getElementById('tb-' + id).classList.remove('active');
+            },
+
+            max: function(id) {
+                const w = document.getElementById(id);
+                w.classList.toggle('maximized');
+            },
+
+            focus: function(id) {
+                const w = document.getElementById(id);
+                if(w) {
+                    w.style.zIndex = ++this.z;
+                    document.querySelectorAll('.window').forEach(x => x.classList.remove('active'));
+                    document.querySelectorAll('.tb-btn').forEach(x => x.classList.remove('active'));
+                    w.classList.add('active');
+                    w.classList.remove('minimized');
+                    document.getElementById('tb-' + id).classList.add('active');
+                }
+            },
+
+            toggle: function(id) {
+                const w = document.getElementById(id);
+                if (w.classList.contains('minimized') || !w.classList.contains('active')) {
+                    this.focus(id);
+                } else {
+                    this.min(id);
+                }
+            },
+
+            dragStart: function(e, id) {
+                if(e.target.tagName === 'BUTTON') return;
+                const w = document.getElementById(id);
+                if(w.classList.contains('maximized')) return;
+
+                let shiftX = e.clientX - w.getBoundingClientRect().left;
+                let shiftY = e.clientY - w.getBoundingClientRect().top;
+
+                function move(ev) {
+                    w.style.left = (ev.clientX - shiftX) + 'px';
+                    w.style.top = (ev.clientY - shiftY) + 'px';
+                }
+                function stop() {
+                    document.removeEventListener('mousemove', move);
+                    document.removeEventListener('mouseup', stop);
+                }
+                document.addEventListener('mousemove', move);
+                document.addEventListener('mouseup', stop);
+            }
+        };
+
+        // --- APPS LOGIC ---
+        const Apps = {
+            launch: function(appType) {
+                if (appType === 'explorer') this.openExplorer(['C:']);
+                if (appType === 'github') this.openBrowser('https://github.com/maybeoff');
+                if (appType === 'browser') this.openBrowser('about:home');
+                if (appType === 'mines') this.minesweeper.run();
+            },
+
+            openExplorer: function(path) {
+                const html = `
+                    <div class="browser-nav">
+                        <button onclick="Apps.openExplorer(['C:'])">Home</button>
+                        <input class="browser-url" value="${path.join('/')}" readonly>
+                    </div>
+                    <div style="padding:10px; color:#ccc;">
+                        Local Files (Demo):<br>
+                        <div class="gh-file">📄 Notes.txt</div>
+                        <div class="gh-file" onclick="Apps.openBrowser('https://github.com/maybeoff')">🌐 Network Projects</div>
+                    </div>
+                `;
+                System.openWindow('Explorer', html);
+            },
+
+            openBrowser: function(url) {
+                const html = `
+                    <div class="browser-nav">
+                        <button onclick="Apps.nav(this, 'home')">🏠</button>
+                        <input class="browser-url" value="${url}" onkeydown="if(event.key==='Enter') Apps.nav(this, 'go')">
+                        <button onclick="Apps.nav(this, 'go')">Go</button>
+                    </div>
+                    <div class="browser-content" style="flex:1; overflow:auto;">Loading...</div>
+                `;
+                const id = System.openWindow('Browser', html);
+                this.loadUrl(document.getElementById(id), url);
+            },
+
+            nav: function(elem, action) {
+                const win = elem.closest('.window');
+                const inp = win.querySelector('.browser-url');
+                if (action === 'home') this.loadUrl(win, 'about:home');
+                else this.loadUrl(win, inp.value);
+            },
+
+            loadUrl: function(win, url) {
+                const content = win.querySelector('.browser-content');
+                const input = win.querySelector('.browser-url');
+                input.value = url;
+
+                if (url.includes('github.com')) {
+                    const parts = url.split('github.com/')[1].split('/');
+                    const user = parts[0];
+                    const repo = parts[1];
+                    if (!repo) this.fetchUser(content, user);
+                    else this.fetchRepo(content, user, repo);
+                    return;
+                }
+
+                if (url === 'about:home') {
+                    content.innerHTML = `<div style="text-align:center; padding:50px;"><h1>AI Browser</h1><button onclick="Apps.loadUrl(this.closest('.window'), 'https://github.com/maybeoff')">Open My GitHub</button></div>`;
+                    return;
+                }
+
+                if (!url.startsWith('http')) url = 'https://' + url;
+                content.innerHTML = `<iframe src="${url}" style="width:100%; height:100%; border:none;"></iframe>`;
+            },
+
+            // --- GITHUB API ---
+            fetchUser: function(container, user) {
+                container.innerHTML = '<div style="padding:20px">Loading User...</div>';
+                fetch(`https://api.github.com/users/${user}/repos`)
+                    .then(r => r.json())
+                    .then(repos => {
+                        if (!Array.isArray(repos)) { container.innerHTML = "User not found or API limit."; return; }
+                        let html = `<div style="padding:10px"><h2>${user} Repositories</h2>`;
+                        repos.forEach(r => { html += `<div class="gh-file" onclick="Apps.loadUrl(this.closest('.window'), 'https://github.com/${user}/${r.name}')">📦 ${r.name}</div>`; });
+                        html += '</div>';
                         container.innerHTML = html;
-                    });
+                    })
+                    .catch(e => container.innerHTML = "Error: " + e.message);
+            },
+
+            fetchRepo: function(container, user, repo) {
+                container.innerHTML = '<div style="padding:20px">Loading Repo...</div>';
+                const apiUrl = `https://api.github.com/repos/${user}/${repo}`;
+                Promise.all([fetch(apiUrl + '/contents').then(r => r.json()), fetch(apiUrl + '/readme').then(r => r.json())])
+                .then(([files, readme]) => {
+                    let html = `<div style="padding:10px"><h3>${repo}</h3>`;
+                    if (Array.isArray(files)) {
+                        files.sort((a,b) => (a.type === b.type ? 0 : a.type === 'dir' ? -1 : 1));
+                        files.forEach(f => { html += `<div class="gh-file" onclick="Apps.viewFile(this.closest('.window'), '${f.url}')">${f.type==='dir'?'📁':'📄'} ${f.name}</div>`; });
+                    }
+                    if (readme.content) {
+                        const txt = this.decodeBase64(readme.content);
+                        html += `<div class="readme"><b>README.md</b><pre style="white-space:pre-wrap;">${txt}</pre></div>`;
+                    }
+                    html += '</div>';
+                    container.innerHTML = html;
+                }).catch(e => container.innerHTML = "Error: API Limit or Network. " + e.message);
+            },
+
+            viewFile: function(win, url) {
+                const content = win.querySelector('.browser-content');
+                content.innerHTML = "Loading file...";
+                fetch(url).then(r=>r.json()).then(data => {
+                    if(data.content) {
+                        const txt = this.decodeBase64(data.content);
+                        const repoUrl = `https://github.com/${data.html_url.split('github.com/')[1].split('/blob')[0]}`;
+                        content.innerHTML = `<div style="padding:10px; background:#222;"><button onclick="Apps.loadUrl(this.closest('.window'), '${repoUrl}')">Back to Repo</button></div><div class="code-view">${txt.replace(/</g, '&lt;')}</div>`;
+                    } else { content.innerHTML = "File too big or binary."; }
+                });
+            },
+
+            decodeBase64: function(str) {
+                try {
+                    const clean = str.replace(/\s/g, '');
+                    const binary = atob(clean);
+                    const bytes = new Uint8Array(binary.length);
+                    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                    return new TextDecoder('utf-8').decode(bytes);
+                } catch(e) { return "Error decoding text: " + e.message; }
+            },
+
+            // --- MINESWEEPER LOGIC ---
+            minesweeper: {
+                games: {}, // Store game state by Window ID
+                timers: {},
+
+                run: function() {
+                    const id = System.openWindow('Minesweeper', '', '300px', '400px');
+                    this.initGame(id);
                 },
 
-                viewFile: function(el, url) {
-                    const win = el.closest('.window');
-                    const v = win.querySelector('.browser-content');
-                    v.innerHTML = '<div style="padding:20px">Loading code...</div>';
+                initGame: function(id) {
+                    const win = document.getElementById(id);
+                    const body = win.querySelector('.win-body');
                     
-                    fetch(url).then(r=>r.json()).then(data => {
-                        if(data.content) {
-                            const code = this.decode(data.content);
-                            const repoLink = `https://github.com/${data.html_url.split('github.com/')[1].split('/blob')[0]}`;
-                            v.innerHTML = `<div class="gh-code-view">
-                                <button onclick="OS.apps.browser.render(this.closest('.window'), '${repoLink}')" style="margin-bottom:10px;padding:5px">← Back to Repo</button>
-                                <div style="border:1px solid #333; padding:10px; background:#0d1117">${code.replace(/</g, '&lt;')}</div>
-                            </div>`;
-                        } else {
-                            v.innerHTML = "File content too large or unavailable via API.";
+                    // Create UI
+                    body.innerHTML = `
+                        <div class="ms-container" oncontextmenu="return false;">
+                            <div class="ms-header">
+                                <div class="ms-counter" id="ms-mines-${id}">010</div>
+                                <div class="ms-face" onclick="Apps.minesweeper.reset('${id}')" id="ms-face-${id}">🙂</div>
+                                <div class="ms-counter" id="ms-timer-${id}">000</div>
+                            </div>
+                            <div class="ms-grid" id="ms-grid-${id}"></div>
+                        </div>
+                    `;
+
+                    this.reset(id);
+                },
+
+                reset: function(id) {
+                    const state = {
+                        grid: [], // 9x9
+                        mines: [],
+                        gameOver: false,
+                        revealed: 0,
+                        flags: 0,
+                        time: 0,
+                        firstClick: true
+                    };
+                    this.games[id] = state;
+                    
+                    if(this.timers[id]) clearInterval(this.timers[id]);
+                    document.getElementById(`ms-timer-${id}`).innerText = "000";
+                    document.getElementById(`ms-mines-${id}`).innerText = "010";
+                    document.getElementById(`ms-face-${id}`).innerText = "🙂";
+
+                    const gridEl = document.getElementById(`ms-grid-${id}`);
+                    gridEl.innerHTML = '';
+                    
+                    // Create Cells
+                    for(let r=0; r<9; r++) {
+                        state.grid[r] = [];
+                        for(let c=0; c<9; c++) {
+                            const cell = document.createElement('div');
+                            cell.className = 'ms-cell';
+                            cell.onmousedown = (e) => this.click(id, r, c, e.button);
+                            gridEl.appendChild(cell);
+                            state.grid[r][c] = {
+                                isMine: false,
+                                isOpen: false,
+                                isFlag: false,
+                                el: cell,
+                                neighbors: 0
+                            };
                         }
-                    });
-                }
-            },
-            notepad: {
-                run: function() { OS.wm.open('notepad','Notepad',`<textarea class="notepad-area"></textarea>`,ICONS.notepad,500,400); }
-            },
-            settings: {
-                run: function() {
-                    const html=`<div class="set-layout"><div class="set-side"><div class="set-tab active">Colors</div></div><div style="padding:20px"><h3>Accent</h3><div class="row" style="gap:10px"><div class="color-dot" style="background:#0078d4" onclick="OS.ui.accent('#0078d4')"></div><div class="color-dot" style="background:#d13438" onclick="OS.ui.accent('#d13438')"></div></div></div></div>`;
-                    OS.wm.open('settings','Settings',html,ICONS.settings,600,400);
+                    }
+                },
+
+                generateMines: function(id, avoidR, avoidC) {
+                    const state = this.games[id];
+                    let placed = 0;
+                    while(placed < 10) {
+                        let r = Math.floor(Math.random() * 9);
+                        let c = Math.floor(Math.random() * 9);
+                        if (!state.grid[r][c].isMine && (r !== avoidR || c !== avoidC)) {
+                            state.grid[r][c].isMine = true;
+                            placed++;
+                        }
+                    }
+
+                    // Calc neighbors
+                    for(let r=0; r<9; r++) {
+                        for(let c=0; c<9; c++) {
+                            if(state.grid[r][c].isMine) continue;
+                            let count = 0;
+                            for(let i=-1; i<=1; i++) {
+                                for(let j=-1; j<=1; j++) {
+                                    if(r+i>=0 && r+i<9 && c+j>=0 && c+j<9 && state.grid[r+i][c+j].isMine) count++;
+                                }
+                            }
+                            state.grid[r][c].neighbors = count;
+                        }
+                    }
+                },
+
+                click: function(id, r, c, btn) {
+                    const state = this.games[id];
+                    if(state.gameOver) return;
+
+                    // Start Timer
+                    if(state.firstClick) {
+                        state.firstClick = false;
+                        this.generateMines(id, r, c);
+                        this.timers[id] = setInterval(() => {
+                            state.time++;
+                            document.getElementById(`ms-timer-${id}`).innerText = state.time.toString().padStart(3,'0');
+                        }, 1000);
+                    }
+
+                    // Right Click (Flag)
+                    if(btn === 2) {
+                        const cell = state.grid[r][c];
+                        if(!cell.isOpen) {
+                            cell.isFlag = !cell.isFlag;
+                            cell.el.innerText = cell.isFlag ? "🚩" : "";
+                            cell.el.classList.toggle('flag');
+                            state.flags += cell.isFlag ? 1 : -1;
+                            document.getElementById(`ms-mines-${id}`).innerText = (10 - state.flags).toString().padStart(3,'0');
+                        }
+                        return;
+                    }
+
+                    // Left Click
+                    if(btn === 0) {
+                        this.open(id, r, c);
+                    }
+                },
+
+                open: function(id, r, c) {
+                    const state = this.games[id];
+                    const cell = state.grid[r][c];
+                    
+                    if(cell.isOpen || cell.isFlag) return;
+
+                    cell.isOpen = true;
+                    cell.el.classList.add('open');
+                    state.revealed++;
+
+                    if(cell.isMine) {
+                        // LOSS
+                        cell.el.classList.add('mine');
+                        cell.el.innerText = "💣";
+                        this.gameOver(id, false);
+                    } else {
+                        if(cell.neighbors > 0) {
+                            cell.el.innerText = cell.neighbors;
+                            cell.el.classList.add('c'+cell.neighbors);
+                        } else {
+                            // Flood fill
+                            for(let i=-1; i<=1; i++) {
+                                for(let j=-1; j<=1; j++) {
+                                    if(r+i>=0 && r+i<9 && c+j>=0 && c+j<9) this.open(id, r+i, c+j);
+                                }
+                            }
+                        }
+                        // Check Win
+                        if(state.revealed === (81 - 10)) {
+                            this.gameOver(id, true);
+                        }
+                    }
+                },
+
+                gameOver: function(id, won) {
+                    const state = this.games[id];
+                    state.gameOver = true;
+                    clearInterval(this.timers[id]);
+                    document.getElementById(`ms-face-${id}`).innerText = won ? "😎" : "😵";
+                    
+                    if(!won) {
+                        // Reveal all mines
+                        state.grid.forEach(row => row.forEach(cell => {
+                            if(cell.isMine) {
+                                cell.el.classList.add('mine');
+                                cell.el.innerText = "💣";
+                            }
+                        }));
+                    }
                 }
             }
-        },
+        };
 
-        ui: {
-            clock: function(){ setInterval(()=>{document.getElementById('clock').innerText=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})},1000) },
-            toggleStart: function(){ document.getElementById('start-menu').classList.toggle('open') },
-            accent: function(c){ document.documentElement.style.setProperty('--accent',c) }
-        },
-        
-        wallpaper: {
-            init: function() {
-                const c=document.getElementById('wallpaper-canvas'), x=c.getContext('2d');
-                const r=()=>{c.width=window.innerWidth; c.height=window.innerHeight; const g=x.createLinearGradient(0,0,0,c.height); g.addColorStop(0,"#111"); g.addColorStop(1,"#223"); x.fillStyle=g; x.fillRect(0,0,c.width,c.height);};
-                window.onresize=r; r();
+        // Close start menu on click outside
+        document.addEventListener('click', e => {
+            const s = document.getElementById('start');
+            const btn = document.querySelector('.tb-btn[title="Start"]');
+            if (!s.contains(e.target) && !btn.contains(e.target)) {
+                s.classList.remove('show');
             }
-        },
+        });
 
-        renderDesktop: function() {
-            const l=[
-                {n:'This PC', i:ICONS.pc, a: () => OS.apps.explorer.run() },
-                {n:'Browser', i:ICONS.browser, a: () => OS.apps.browser.run() },
-                {n:'Notepad', i:ICONS.notepad, a: () => OS.apps.notepad.run() },
-                {n:'Settings', i:ICONS.settings, a: () => OS.apps.settings.run() }
-            ];
-            const d=document.getElementById('desktop-icons'), s=document.getElementById('start-grid');
-            d.innerHTML=''; s.innerHTML='';
-            l.forEach(x=>{
-                const el=document.createElement('div'); el.className='d-icon'; 
-                el.innerHTML=x.i+`<span>${x.n}</span>`; 
-                el.ondblclick = x.a; 
-                d.appendChild(el);
-                
-                const se=document.createElement('div'); se.className='start-item'; 
-                se.innerHTML=`<div style="width:32px">${x.i}</div><div>${x.n}</div>`; 
-                se.onclick=()=>{ x.a(); OS.ui.toggleStart() };
-                s.appendChild(se);
-            });
-        }
-    };
-
-    document.onclick=(e)=>{if
-(!e.target.closest('#start-menu') && !e.target.closest('.tb-btn[title="Start"]')) document.getElementById('start-menu').classList.remove('open')};
-    OS.init();
     </script>
 </body>
 </html>
