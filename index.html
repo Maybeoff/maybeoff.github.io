@@ -53,13 +53,14 @@
 
   <script>
     const username = "Maybeoff"; // вставь свой ник
+    const exclude = ["maybeoff"]; // репозитории/сайты, которые НЕ показываем
     const container = document.getElementById("sites");
 
     fetch(`https://api.github.com/users/${username}/repos`)
       .then(res => res.json())
       .then(repos => {
         repos.forEach(repo => {
-          if(repo.has_pages) {
+          if(repo.has_pages && !exclude.includes(repo.name)) {
             const url = `https://${username}.github.io/${repo.name}/`;
             const btn = document.createElement("a");
             btn.href = url;
