@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест скорости</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .speed-display {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .speed-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        .speed-unit {
+            font-size: 20px;
+            color: #666;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        .status {
+            text-align: center;
+            color: #666;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .mode-switch {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #666;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .mode-btn.active {
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+        }
+        .mode-btn:hover:not(.active) {
+            background: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Тест скорости загрузки</h1>
+        
+        <div class="speed-display">
+            <div class="speed-value" id="speedValue">0</div>
+            <div class="speed-unit">Мбит/с</div>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <div class="status" id="status">Нажмите кнопку для начала теста</div>
+        
+        <button id="startBtn" onclick="startTest()">Начать тест</button>
+        
+        <div class="mode-switch">
+            <button class="mode-btn active" onclick="setMode('single')">Single</button>
+            <button class="mode-btn" onclick="setMode('multi')">Multi</button>
+        </div>
+        
+        <div class="mode-switch">
+            <button class="mode-btn active" onclick="setFileSize(10)">10 МБ</button>
+            <button class="mode-btn" onclick="setFileSize(25)">25 МБ</button>
+        </div>
+        
+        <div class="info">
+            <div class="info-row">
+                <span>Размер файла:</span>
+                <span id="fileSize">10 МБ</span>
+            </div>
+            <div class="info-row">
+                <span>Загружено:</span>
+                <span id="downloaded">0 МБ</span>
+            </div>
+            <div class="info-row">
+                <span>Время:</span>
+                <span id="time">0 сек</span>
+            </div>
+            <div class="info-row" id="minSpeedRow" style="display: none;">
+                <span>Min скорость:</span>
+                <span id="minSpeed">0 Мбит/с</span>
+            </div>
+            <div class="info-row" id="maxSpeedRow" style="display: none;">
+                <span>Max скорость:</span>
+                <span id="maxSpeed">0 Мбит/с</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let startTime;
+        let isRunning = false;
+        let totalReceived = 0;
+        const TEST_DURATION = 5; // 5 секунд
+        let animationFrame;
+        let lastUpdateTime = 0;
+        let currentMode = 'single'; // single или multi
+        let currentFileSize = 10; // 10 или 25 МБ
+        let minSpeed = Infinity;
+        let maxSpeed = 0;
+
+        function setMode(mode) {
+            if (isRunning) return;
+            
+            currentMode = mode;
+            const containers = document.querySelectorAll('.mode-switch');
+            if (containers.length > 0) {
+                const buttons = containers[0].querySelectorAll('.mode-btn');
+                buttons.forEach(btn => {
+                    if (btn.textContent.toLowerCase() === mode) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+        }
+
+        function setFileSize(size) {
+            if (isRunning) return;
+            
+            currentFileSize = size;
+            document.getElementById('fileSize').textContent = size + ' МБ';
+            
+            const containers = document.querySelectorAll('.mode-switch');
+            if (containers.length > 1) {
+                const buttons = containers[1].querySelectorAll('.mode-btn');
+                buttons.forEach(btn => {
+                    if (btn.textContent.includes(size + ' МБ')) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+        }
+
+        async function downloadFileSingle() {
+            const fileName = currentFileSize === 10 ? 'test10mb.bin' : 'test25mb.bin';
+            const response = await fetch(fileName + '?t=' + Date.now());
+            const reader = response.body.getReader();
+            
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                
+                totalReceived += value.length;
+                
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed >= TEST_DURATION) {
+                    reader.cancel();
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        async function downloadChunk(start, end) {
+            const fileName = currentFileSize === 10 ? 'test10mb.bin' : 'test25mb.bin';
+            const response = await fetch(fileName + '?t=' + Date.now(), {
+                headers: {
+                    'Range': `bytes=${start}-${end}`
+                }
+            });
+            const reader = response.body.getReader();
+            
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                
+                totalReceived += value.length;
+                
+                const elapsed = (Date.now() - startTime) / 1000;
+                if (elapsed >= TEST_DURATION) {
+                    reader.cancel();
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        async function downloadFileMulti() {
+            const fileSize = currentFileSize * 1024 * 1024;
+            const numThreads = Math.floor(Math.random() * 6) + 10; // 10-15 потоков
+            const chunkSize = Math.floor(fileSize / numThreads);
+            
+            const promises = [];
+            for (let i = 0; i < numThreads; i++) {
+                const start = i * chunkSize;
+                const end = (i === numThreads - 1) ? fileSize - 1 : (start + chunkSize - 1);
+                promises.push(downloadChunk(start, end));
+            }
+            
+            await Promise.all(promises);
+            return true;
+        }
+
+        function smoothUpdate() {
+            if (!isRunning) return;
+            
+            const now = Date.now();
+            const elapsed = (now - startTime) / 1000;
+            
+            if (elapsed >= TEST_DURATION) {
+                return;
+            }
+            
+            if (now - lastUpdateTime >= 50) {
+                updateDisplay(elapsed);
+                lastUpdateTime = now;
+            }
+            
+            animationFrame = requestAnimationFrame(smoothUpdate);
+        }
+
+        function updateDisplay(elapsed) {
+            const speedValue = document.getElementById('speedValue');
+            const progressFill = document.getElementById('progressFill');
+            const downloaded = document.getElementById('downloaded');
+            const timeDisplay = document.getElementById('time');
+            
+            const speedMbps = parseFloat((totalReceived * 8 / elapsed / 1024 / 1024).toFixed(2));
+            const downloadedMB = (totalReceived / 1024 / 1024).toFixed(2);
+            const progress = Math.min((elapsed / TEST_DURATION * 100), 100).toFixed(1);
+            
+            // Обновляем min и max скорость (только если прошло больше 0.5 сек для точности)
+            if (elapsed > 0.5 && speedMbps > 0) {
+                if (speedMbps < minSpeed) minSpeed = speedMbps;
+                if (speedMbps > maxSpeed) maxSpeed = speedMbps;
+            }
+            
+            speedValue.textContent = speedMbps;
+            progressFill.style.width = progress + '%';
+            downloaded.textContent = downloadedMB + ' МБ';
+            timeDisplay.textContent = elapsed.toFixed(2) + ' сек';
+        }
+
+        async function startTest() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            totalReceived = 0;
+            lastUpdateTime = 0;
+            minSpeed = Infinity;
+            maxSpeed = 0;
+            
+            const btn = document.getElementById('startBtn');
+            const speedValue = document.getElementById('speedValue');
+            const progressFill = document.getElementById('progressFill');
+            const status = document.getElementById('status');
+            const downloaded = document.getElementById('downloaded');
+            const timeDisplay = document.getElementById('time');
+            const minSpeedRow = document.getElementById('minSpeedRow');
+            const maxSpeedRow = document.getElementById('maxSpeedRow');
+            const minSpeedDisplay = document.getElementById('minSpeed');
+            const maxSpeedDisplay = document.getElementById('maxSpeed');
+            
+            // Скрываем min/max при старте
+            minSpeedRow.style.display = 'none';
+            maxSpeedRow.style.display = 'none';
+            
+            btn.disabled = true;
+            status.textContent = `Загрузка (${currentMode === 'single' ? 'Single' : 'Multi'} режим)...`;
+            speedValue.textContent = '0';
+            progressFill.style.width = '0%';
+            downloaded.textContent = '0 МБ';
+            timeDisplay.textContent = '0 сек';
+            
+            startTime = Date.now();
+            smoothUpdate();
+            
+            try {
+                while (true) {
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    
+                    if (elapsed >= TEST_DURATION) {
+                        break;
+                    }
+                    
+                    let fileCompleted;
+                    if (currentMode === 'single') {
+                        fileCompleted = await downloadFileSingle();
+                    } else {
+                        fileCompleted = await downloadFileMulti();
+                    }
+                    
+                    const timeAfterDownload = (Date.now() - startTime) / 1000;
+                    
+                    if (timeAfterDownload >= TEST_DURATION) {
+                        break;
+                    }
+                    
+                    if (fileCompleted) {
+                        const downloadTime = timeAfterDownload - (elapsed || 0);
+                        if (downloadTime < 0.5) {
+                            continue;
+                        }
+                    }
+                }
+                
+                if (animationFrame) {
+                    cancelAnimationFrame(animationFrame);
+                }
+                
+                const totalTime = (Date.now() - startTime) / 1000;
+                const finalSpeed = (totalReceived * 8 / totalTime / 1024 / 1024).toFixed(2);
+                
+                speedValue.textContent = finalSpeed;
+                progressFill.style.width = '100%';
+                status.textContent = '✅ Тест завершен!';
+                timeDisplay.textContent = totalTime.toFixed(2) + ' сек';
+                
+                // Показываем min/max скорость
+                minSpeedRow.style.display = 'flex';
+                maxSpeedRow.style.display = 'flex';
+                minSpeedDisplay.textContent = minSpeed === Infinity ? '0 Мбит/с' : minSpeed.toFixed(2) + ' Мбит/с';
+                maxSpeedDisplay.textContent = maxSpeed.toFixed(2) + ' Мбит/с';
+                
+            } catch (error) {
+                if (animationFrame) {
+                    cancelAnimationFrame(animationFrame);
+                }
+                status.textContent = '❌ Ошибка: ' + error.message;
+                speedValue.textContent = '0';
+            }
+            
+            btn.disabled = false;
+            isRunning = false;
+        }
+    </script>
+</body>
+</html>
