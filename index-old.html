@@ -249,7 +249,7 @@
 
   <script>
     const username = "Maybeoff";
-    const exclude = ["maybeoff", "maybeoff.github.io"];
+    const exclude = ["maybeoff"];
     const sitesContainer = document.getElementById("sites");
     const loadingContainer = document.getElementById("loading");
     const emptyState = document.getElementById("empty");
@@ -269,19 +269,6 @@
         }
 
         sitesContainer.style.display = "grid";
-
-        // Добавляем speedtest.html
-        const speedtestCard = document.createElement("a");
-        speedtestCard.href = "speedtest.html";
-        speedtestCard.className = "site-card";
-        speedtestCard.innerHTML = `
-          <div class="site-card-content">
-            <div class="site-card-icon">⚡</div>
-            <div class="site-card-name">speedtest</div>
-            <div class="site-card-link">Открыть →</div>
-          </div>
-        `;
-        sitesContainer.appendChild(speedtestCard);
 
         filteredRepos.forEach(repo => {
           const url = `https://${username}.github.io/${repo.name}/`;

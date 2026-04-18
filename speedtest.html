@@ -228,49 +228,88 @@
             }
         }
 
-        async function downloadFileSingle() {
+        function getFileUrl(source) {
             const fileName = currentFileSize === 10 ? 'test10mb.bin' : 'test25mb.bin';
-            const response = await fetch('https://s3.twcstorage.ru/36085461-9922-4010-a940-28cac656cdf4/' + fileName + '?t=' + Date.now());
-            const reader = response.body.getReader();
-            
-            while (true) {
-                const {done, value} = await reader.read();
-                if (done) break;
-                
-                totalReceived += value.length;
-                
-                const elapsed = (Date.now() - startTime) / 1000;
-                if (elapsed >= TEST_DURATION) {
-                    reader.cancel();
-                    return false;
-                }
+            if (source === 'local') {
+                return fileName + '?t=' + Date.now();
+            } else {
+                return 'https://s3.twcstorage.ru/36085461-9922-4010-a940-28cac656cdf4/' + fileName + '?t=' + Date.now();
             }
-            
+        }
+
+        async function downloadFromSource(source) {
+            const url = getFileUrl(source);
+            try {
+                const response = await fetch(url);
+                const reader = response.body.getReader();
+                
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    
+                    totalReceived += value.length;
+                    
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    if (elapsed >= TEST_DURATION) {
+                        reader.cancel();
+                        return false;
+                    }
+                }
+                
+                return true;
+            } catch (error) {
+                console.log('Error downloading from ' + source + ':', error);
+                return false;
+            }
+        }
+
+        async function downloadFileSingle() {
+            // Всегда загружаем с обоих источников одновременно
+            const promises = [
+                downloadFromSource('local'),
+                downloadFromSource('s3')
+            ];
+            await Promise.all(promises);
             return true;
         }
 
-        async function downloadChunk(start, end) {
-            const fileName = currentFileSize === 10 ? 'test10mb.bin' : 'test25mb.bin';
-            const response = await fetch('https://s3.twcstorage.ru/36085461-9922-4010-a940-28cac656cdf4/' + fileName + '?t=' + Date.now(), {
-                headers: {
-                    'Range': `bytes=${start}-${end}`
-                }
-            });
-            const reader = response.body.getReader();
-            
-            while (true) {
-                const {done, value} = await reader.read();
-                if (done) break;
+        async function downloadChunkFromSource(source, start, end) {
+            const url = getFileUrl(source);
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Range': `bytes=${start}-${end}`
+                    }
+                });
+                const reader = response.body.getReader();
                 
-                totalReceived += value.length;
-                
-                const elapsed = (Date.now() - startTime) / 1000;
-                if (elapsed >= TEST_DURATION) {
-                    reader.cancel();
-                    return false;
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    
+                    totalReceived += value.length;
+                    
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    if (elapsed >= TEST_DURATION) {
+                        reader.cancel();
+                        return false;
+                    }
                 }
+                
+                return true;
+            } catch (error) {
+                console.log('Error downloading chunk from ' + source + ':', error);
+                return false;
             }
-            
+        }
+
+        async function downloadChunk(start, end) {
+            // Всегда загружаем с обоих источников одновременно
+            const promises = [
+                downloadChunkFromSource('local', start, end),
+                downloadChunkFromSource('s3', start, end)
+            ];
+            await Promise.all(promises);
             return true;
         }
 
