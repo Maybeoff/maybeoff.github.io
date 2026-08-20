@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>P2P File Share</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  h1 { font-size: 24px; margin-bottom: 6px; }
+  .sub { color: #94a3b8; font-size: 14px; margin-bottom: 24px; }
+.drop {
+    border: 2px dashed #475569;
+    border-radius: 12px;
+    padding: 32px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    color: #94a3b8;
+    display: block;
+    width: 100%;
+    position: relative;
+  }
+  .drop input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+  }
+  .fileinfo {
+    margin-top: 16px;
+    padding: 14px;
+    background: #0f172a;
+    border-radius: 10px;
+    font-size: 14px;
+    display: none;
+  }
+  .fileinfo .name { font-weight: 600; word-break: break-all; }
+  .fileinfo .size { color: #94a3b8; margin-top: 4px; }
+  .link-row {
+    margin-top: 16px;
+    display: none;
+    gap: 8px;
+    align-items: center;
+  }
+  .link-row input {
+    flex: 1;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px;
+    color: #e2e8f0;
+    font-size: 13px;
+  }
+  button {
+    background: #38bdf8;
+    color: #0f172a;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  button:hover { background: #7dd3fc; }
+  button:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+  .status {
+    margin-top: 18px;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    background: #0f172a;
+    display: none;
+  }
+  .bar {
+    margin-top: 10px;
+    height: 8px;
+    background: #334155;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar > div {
+    height: 100%;
+    background: #38bdf8;
+    width: 0%;
+    transition: width 0.2s;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    background: #334155;
+    margin-left: 8px;
+  }
+  .ok { color: #4ade80; }
+  .err { color: #f87171; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>P2P File Share <span class="badge">WebRTC</span></h1>
+    <div class="sub">Файл передаётся напрямую между браузерами, без промежуточного сервера.</div>
+
+    <div id="senderView">
+      <label class="drop" id="drop">
+        <input type="file" id="fileInput" />
+        Перетащите файл сюда или нажмите для выбора
+      </label>
+      <div class="fileinfo" id="fileinfo">
+        <div class="name" id="fname"></div>
+        <div class="size" id="fsize"></div>
+      </div>
+      <div class="stats" id="peerInfo" style="display:none; margin-top:12px; padding:12px; background:#0f172a; border-radius:10px; font-size:13px; color:#94a3b8; line-height:1.8">
+        <div style="color:#e2e8f0; margin-bottom:8px">Получатель: <span id="peerName" style="color:#38bdf8">—</span> <span id="peerId" style="font-size:11px; color:#64748b"></span></div>
+        <div>Скорость: <span id="pCurSpeed">—</span></div>
+        <div>Средняя: <span id="pAvgSpeed">—</span></div>
+        <div>Получено: <span id="pReceived">0</span> / <span id="pTotal">0</span> (<span id="pPct">0%</span>)</div>
+        <div>Прошло: <span id="pElapsed">0с</span> / Осталось: <span id="pEta">—</span></div>
+      </div>
+      <div class="stats" id="sendStats" style="display:none; margin-top:12px; font-size:13px; color:#94a3b8; line-height:1.8">
+        <div>Скорость: <span id="sCurSpeed">—</span></div>
+        <div>Средняя: <span id="sAvgSpeed">—</span></div>
+        <div>Прошло: <span id="sElapsed">0с</span> / Осталось: <span id="sEta">—</span></div>
+      </div>
+      <div class="link-row" id="linkRow">
+        <input id="linkInput" readonly />
+        <button id="copyBtn">Копировать</button>
+      </div>
+    </div>
+
+    <div id="receiverView" style="display:none">
+      <div class="fileinfo" style="display:block">
+        <div class="name" id="rname">Подготовка…</div>
+        <div class="size" id="rsize"></div>
+      </div>
+      <div class="stats" id="recvStats" style="display:none; margin-top:12px; font-size:13px; color:#94a3b8; line-height:1.8">
+        <div>Скорость: <span id="curSpeed">—</span></div>
+        <div>Средняя: <span id="avgSpeed">—</span></div>
+        <div>Прошло: <span id="elapsed">0с</span> / Осталось: <span id="eta">—</span></div>
+      </div>
+      <div style="margin-top:16px"><button id="dlBtn" disabled>Скачать файл</button></div>
+    </div>
+
+    <div class="status" id="status">
+      <div id="statusText"></div>
+      <div class="bar"><div id="progress"></div></div>
+    </div>
+  </div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+const CHUNK = 64 * 1024;
+const $ = id => document.getElementById(id);
+
+function fmtSize(b) {
+  if (b < 1024) return b + " B";
+  if (b < 1048576) return (b/1024).toFixed(1) + " KB";
+  if (b < 1073741824) return (b/1048576).toFixed(1) + " MB";
+  return (b/1073741824).toFixed(2) + " GB";
+}
+function showStatus(text, cls) {
+  $("status").style.display = "block";
+  const t = $("statusText");
+  t.textContent = text;
+  t.className = cls || "";
+}
+function setProgress(p) { $("progress").style.width = (p*100).toFixed(1) + "%"; }
+
+let peer, conn, file;
+let closedIntentionally = false;
+
+  // Determine role from URL ?id=
+const params = new URLSearchParams(location.search);
+const remoteId = params.get("id");
+
+if (remoteId) {
+  // RECEIVER
+  $("senderView").style.display = "none";
+  $("receiverView").style.display = "block";
+  showStatus("Подключение к отправителю…");
+  peer = new Peer();
+  peer.on("open", myId => {
+    conn = peer.connect(remoteId, { reliable: true });
+    conn.on("open", () => showStatus("Соединение установлено, ожидание файла…"));
+    conn.on("data", handleData);
+    conn.on("close", () => showStatus("Передача завершена / соединение закрыто.", "ok"));
+    conn.on("error", e => showStatus("Ошибка: " + e, "err"));
+  });
+  peer.on("error", e => showStatus("Ошибка подключения: " + e, "err"));
+} else {
+  // SENDER
+  const di = $("drop"), fi = $("fileInput");
+  di.addEventListener("click", () => fi.click());
+  ["dragover","dragenter"].forEach(ev => di.addEventListener(ev, e => { e.preventDefault(); di.classList.add("drag"); }));
+  ["dragleave","drop"].forEach(ev => di.addEventListener(ev, e => { e.preventDefault(); di.classList.remove("drag"); }));
+  di.addEventListener("drop", e => { if (e.dataTransfer.files.length) onFile(e.dataTransfer.files[0]); });
+  fi.addEventListener("change", () => { if (fi.files.length) onFile(fi.files[0]); });
+
+  function onFile(f) {
+    // Clear previous transfer stats
+    clearStats();
+    file = f;
+    $("fname").textContent = f.name;
+    $("fsize").textContent = fmtSize(f.size);
+    $("fileinfo").style.display = "block";
+    startSender();
+  }
+
+  function clearStats() {
+    // Hide peer info
+    $("peerInfo").style.display = "none";
+    $("peerName").textContent = "—";
+    $("peerId").textContent = "";
+    $("pCurSpeed").textContent = "—";
+    $("pAvgSpeed").textContent = "—";
+    $("pReceived").textContent = "0";
+    $("pTotal").textContent = "0";
+    $("pPct").textContent = "0%";
+    $("pElapsed").textContent = "0с";
+    $("pEta").textContent = "—";
+    // Hide send stats
+    $("sendStats").style.display = "none";
+    $("sCurSpeed").textContent = "—";
+    $("sAvgSpeed").textContent = "—";
+    $("sElapsed").textContent = "0с";
+    $("sEta").textContent = "—";
+    // Reset progress
+    setProgress(0);
+    // Close old connection if any
+    closedIntentionally = true;
+    if (conn && conn.open) conn.close();
+    if (peer && !peer.destroyed) peer.destroy();
+  }
+
+  function startSender() {
+    closedIntentionally = false;
+    showStatus("Создание ссылки…");
+    peer = new Peer();
+    peer.on("open", myId => {
+      const link = location.origin + location.pathname + "?id=" + myId;
+      $("linkInput").value = link;
+      $("linkRow").style.display = "flex";
+      showStatus("Ссылка готова. Ждём получателя…", "ok");
+    });
+    peer.on("connection", c => {
+      conn = c;
+      conn.on("open", () => {
+        showStatus("Получатель подключился, отправляем файл…");
+        $("peerInfo").style.display = "block";
+        $("peerName").textContent = conn.peer;
+        $("peerId").textContent = "(" + conn.peer.slice(0,8) + "…)";
+        sendFile();
+      });
+      conn.on("data", d => {
+        if (d && d.progress) updatePeerInfo(d);
+      });
+      conn.on("close", () => {
+        if (!closedIntentionally) showStatus("Получатель отключился.", "err");
+      });
+      conn.on("error", e => showStatus("Ошибка: " + e, "err"));
+    });
+    peer.on("error", e => showStatus("Ошибка: " + e, "err"));
+   }
+
+   // Copy button
+   $("copyBtn").addEventListener("click", () => {
+     const input = $("linkInput");
+     input.select();
+     document.execCommand("copy");
+     const btn = $("copyBtn");
+     const orig = btn.textContent;
+     btn.textContent = "Скопировано!";
+     setTimeout(() => btn.textContent = orig, 1500);
+   });
+
+   async function sendFile() {
+    // Compute SHA-256 hash before sending
+    const hashBuffer = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+    const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+    
+    conn.send({ meta: true, name: file.name, size: file.size, type: file.type, sha256: hashHex });
+    const total = file.size;
+    let sent = 0;
+    const reader = file.stream().getReader();
+    let sStart = performance.now(), sLast = sStart, sLastSent = 0;
+    $("sendStats").style.display = "block";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      for (let i = 0; i < value.length; i += CHUNK) {
+        conn.send(value.slice(i, i + CHUNK));
+        sent += Math.min(CHUNK, value.length - i);
+      }
+      setProgress(sent / total);
+      const now = performance.now();
+      const dt = (now - sLast) / 1000;
+      const dSent = sent - sLastSent;
+      if (dt > 0.3) {
+        const cur = dSent / dt;
+        const avg = sent / ((now - sStart) / 1000);
+        $("sCurSpeed").textContent = fmtSpeed(cur);
+        $("sAvgSpeed").textContent = fmtSpeed(avg);
+        const elapsed = (now - sStart) / 1000;
+        $("sElapsed").textContent = fmtTime(elapsed);
+        if (avg > 0) {
+          const remain = (total - sent) / avg;
+          $("sEta").textContent = fmtTime(remain);
+        }
+        sLast = now;
+        sLastSent = sent;
+      }
+      while (conn._dc && conn._dc.bufferedAmount > 4 * 1024 * 1024) {
+        await new Promise(r => setTimeout(r, 20));
+      }
+    }
+    conn.send({ done: true });
+    showStatus("Файл полностью отправлен!", "ok");
+    // Close connection cleanly after transfer
+    setTimeout(() => {
+      closedIntentionally = true;
+      if (conn && conn.open) conn.close();
+      if (peer && !peer.destroyed) peer.destroy();
+    }, 500);
+  }
+
+  function updatePeerInfo(p) {
+    if (p.total) {
+      $("pTotal").textContent = fmtSize(p.total);
+      const pct = p.received / p.total * 100;
+      $("pPct").textContent = pct.toFixed(1) + "%";
+    }
+    $("pReceived").textContent = fmtSize(p.received || 0);
+    if (p.curSpeed) $("pCurSpeed").textContent = fmtSpeed(p.curSpeed);
+    if (p.avgSpeed) $("pAvgSpeed").textContent = fmtSpeed(p.avgSpeed);
+    if (p.elapsed) $("pElapsed").textContent = fmtTime(p.elapsed);
+    if (p.avgSpeed && p.total && p.received < p.total) {
+      const remain = (p.total - p.received) / p.avgSpeed;
+      $("pEta").textContent = fmtTime(remain);
+    }
+    if (p.done) {
+      showStatus("Получатель скачал файл полностью!", "ok");
+    }
+  }
+}
+
+// RECEIVER data handler
+let received = [], receivedSize = 0, meta = null, blobUrl = null;
+let startTime = 0, lastTime = 0, lastSize = 0;
+let lastProgressSent = 0;
+let lastCurSpeed = 0, lastAvgSpeed = 0;
+async function handleData(data) {
+  if (data && data.meta) {
+    meta = data;
+    $("rname").textContent = data.name;
+    $("rsize").textContent = fmtSize(data.size);
+    showStatus("Приём файла…");
+    $("recvStats").style.display = "block";
+    startTime = lastTime = performance.now();
+    lastSize = 0;
+    return;
+  }
+  if (data && data.done) {
+    const blob = new Blob(received, { type: meta ? meta.type : "application/octet-stream" });
+    
+    // Verify hash if provided by sender
+    if (meta && meta.sha256) {
+      showStatus("Проверка целостности (SHA-256)…");
+      try {
+        const hashBuffer = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
+        const computedHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+        if (computedHex.toLowerCase() === meta.sha256.toLowerCase()) {
+          showStatus("✅ Хеш совпадает — файл цел!", "ok");
+        } else {
+          showStatus("❌ ОШИБКА: Хеш НЕ совпадает! Файл повреждён.", "err");
+          console.error("Expected:", meta.sha256, "Got:", computedHex);
+        }
+      } catch (e) {
+        showStatus("⚠️ Не удалось проверить хеш: " + e, "err");
+      }
+    }
+    
+    blobUrl = URL.createObjectURL(blob);
+    const btn = $("dlBtn");
+    btn.disabled = false;
+    btn.onclick = () => {
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = meta ? meta.name : "file";
+      a.click();
+    };
+    setProgress(1);
+    if (!meta?.sha256) showStatus("Файл получен. Нажмите «Скачать файл».", "ok");
+    sendProgress({ done: true, received: receivedSize, total: meta?.size || receivedSize, curSpeed: lastCurSpeed, avgSpeed: lastAvgSpeed, elapsed: (performance.now() - startTime) / 1000 });
+    // Close connection cleanly after transfer
+    setTimeout(() => {
+      if (conn && conn.open) conn.close();
+      if (peer && !peer.destroyed) peer.destroy();
+    }, 500);
+    return;
+  }
+  if (data instanceof ArrayBuffer) {
+    received.push(data);
+    receivedSize += data.byteLength;
+  } else if (data && data.buffer) {
+    received.push(data.buffer);
+    receivedSize += data.byteLength;
+  } else {
+    return;
+  }
+  if (meta) {
+    const pct = receivedSize / meta.size;
+    setProgress(pct);
+    const now = performance.now();
+    const dt = (now - lastTime) / 1000;
+    const dSize = receivedSize - lastSize;
+    if (dt > 0.3) {
+      lastCurSpeed = dSize / dt;
+      lastAvgSpeed = receivedSize / ((now - startTime) / 1000);
+      $("curSpeed").textContent = fmtSpeed(lastCurSpeed);
+      $("avgSpeed").textContent = fmtSpeed(lastAvgSpeed);
+      const elapsed = (now - startTime) / 1000;
+      $("elapsed").textContent = fmtTime(elapsed);
+      if (lastAvgSpeed > 0) {
+        const remain = (meta.size - receivedSize) / lastAvgSpeed;
+        $("eta").textContent = fmtTime(remain);
+      }
+      lastTime = now;
+      lastSize = receivedSize;
+    }
+    // send progress back to sender every ~200ms
+    if (now - lastProgressSent > 200) {
+      sendProgress({ received: receivedSize, total: meta.size, curSpeed: lastCurSpeed, avgSpeed: lastAvgSpeed, elapsed: (now - startTime) / 1000 });
+      lastProgressSent = now;
+    }
+  }
+}
+
+function sendProgress(obj) {
+  if (conn && conn.open) conn.send({ progress: true, ...obj });
+}
+
+function fmtSpeed(bps) {
+  if (bps < 1024) return bps.toFixed(0) + " B/s";
+  if (bps < 1048576) return (bps/1024).toFixed(1) + " KB/s";
+  return (bps/1048576).toFixed(2) + " MB/s";
+}
+function fmtTime(sec) {
+  if (sec < 60) return sec.toFixed(0) + "с";
+  const m = Math.floor(sec/60), s = Math.floor(sec%60);
+  return m + "м " + s + "с";
+}
+</script>
+</body>
+</html>
