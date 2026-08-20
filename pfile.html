@@ -226,31 +226,29 @@ if (remoteId) {
     startSender();
   }
 
-  function clearStats() {
-    // Hide peer info
-    $("peerInfo").style.display = "none";
-    $("peerName").textContent = "—";
-    $("peerId").textContent = "";
-    $("pCurSpeed").textContent = "—";
-    $("pAvgSpeed").textContent = "—";
-    $("pReceived").textContent = "0";
-    $("pTotal").textContent = "0";
-    $("pPct").textContent = "0%";
-    $("pElapsed").textContent = "0с";
-    $("pEta").textContent = "—";
-    // Hide send stats
-    $("sendStats").style.display = "none";
-    $("sCurSpeed").textContent = "—";
-    $("sAvgSpeed").textContent = "—";
-    $("sElapsed").textContent = "0с";
-    $("sEta").textContent = "—";
-    // Reset progress
-    setProgress(0);
-    // Close old connection if any
-    closedIntentionally = true;
-    if (conn && conn.open) conn.close();
-    if (peer && !peer.destroyed) peer.destroy();
-  }
+function clearStats() {
+     // Hide peer info
+     $("peerInfo").style.display = "none";
+     $("peerName").textContent = "—";
+     $("peerId").textContent = "";
+     $("pCurSpeed").textContent = "—";
+     $("pAvgSpeed").textContent = "—";
+     $("pReceived").textContent = "0";
+     $("pTotal").textContent = "0";
+     $("pPct").textContent = "0%";
+     $("pElapsed").textContent = "0с";
+     $("pEta").textContent = "—";
+     // Hide send stats
+     $("sendStats").style.display = "none";
+     $("sCurSpeed").textContent = "—";
+     $("sAvgSpeed").textContent = "—";
+     $("sElapsed").textContent = "0с";
+     $("sEta").textContent = "—";
+     // Reset progress
+     setProgress(0);
+     // Keep connection open for next file
+     closedIntentionally = false;
+   }
 
   function startSender() {
     closedIntentionally = false;
@@ -274,9 +272,9 @@ if (remoteId) {
       conn.on("data", d => {
         if (d && d.progress) updatePeerInfo(d);
       });
-      conn.on("close", () => {
-        if (!closedIntentionally) showStatus("Получатель отключился.", "err");
-      });
+conn.on("close", () => {
+         if (!closedIntentionally) showStatus("Соединение закрыто.", "err");
+       });
       conn.on("error", e => showStatus("Ошибка: " + e, "err"));
     });
     peer.on("error", e => showStatus("Ошибка: " + e, "err"));
@@ -293,10 +291,53 @@ if (remoteId) {
      setTimeout(() => btn.textContent = orig, 1500);
    });
 
+// Web Worker for non-blocking SHA-256
+function computeHashInWorker(file) {
+  return new Promise((resolve, reject) => {
+    const workerCode = `
+      self.onmessage = async (e) => {
+        const { fileData } = e.data;
+        const stream = fileData.stream();
+        const reader = stream.getReader();
+        const chunks = [];
+        let totalSize = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          totalSize += value.length;
+        }
+        const buffer = new Uint8Array(totalSize);
+        let offset = 0;
+        for (const chunk of chunks) {
+          buffer.set(chunk, offset);
+          offset += chunk.length;
+        }
+        const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+        const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+        self.postMessage({ hash: hashHex });
+      };
+    `;
+    const blob = new Blob([workerCode], { type: "application/javascript" });
+    const workerUrl = URL.createObjectURL(blob);
+    const worker = new Worker(workerUrl);
+    worker.onmessage = (e) => {
+      URL.revokeObjectURL(workerUrl);
+      worker.terminate();
+      resolve(e.data.hash);
+    };
+    worker.onerror = (err) => {
+      URL.revokeObjectURL(workerUrl);
+      worker.terminate();
+      reject(err);
+    };
+    worker.postMessage({ fileData: file });
+  });
+}
+
 async function sendFile() {
-     // Compute SHA-256 hash before sending
-     const hashBuffer = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
-     const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+     // Compute SHA-256 hash in Web Worker (non-blocking)
+     const hashHex = await computeHashInWorker(file);
      
      conn.send({ meta: true, name: file.name, size: file.size, type: file.type, sha256: hashHex });
      const total = file.size;
@@ -317,12 +358,7 @@ async function sendFile() {
      }
      conn.send({ done: true });
      showStatus("Файл полностью отправлен!", "ok");
-     // Close connection cleanly after transfer
-     setTimeout(() => {
-       closedIntentionally = true;
-       if (conn && conn.open) conn.close();
-       if (peer && !peer.destroyed) peer.destroy();
-     }, 500);
+     // Keep connection open - do not close
    }
 
 function updatePeerInfo(p) {
@@ -369,44 +405,39 @@ async function handleData(data) {
     lastSize = 0;
     return;
   }
-  if (data && data.done) {
-    const blob = new Blob(received, { type: meta ? meta.type : "application/octet-stream" });
-    
-    // Verify hash if provided by sender
-    if (meta && meta.sha256) {
-      showStatus("Проверка целостности (SHA-256)…");
-      try {
-        const hashBuffer = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
-        const computedHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
-        if (computedHex.toLowerCase() === meta.sha256.toLowerCase()) {
-          showStatus("✅ Хеш совпадает — файл цел!", "ok");
-        } else {
-          showStatus("❌ ОШИБКА: Хеш НЕ совпадает! Файл повреждён.", "err");
-          console.error("Expected:", meta.sha256, "Got:", computedHex);
-        }
-      } catch (e) {
-        showStatus("⚠️ Не удалось проверить хеш: " + e, "err");
-      }
-    }
-    
-    blobUrl = URL.createObjectURL(blob);
-    const btn = $("dlBtn");
-    btn.disabled = false;
-    btn.onclick = () => {
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = meta ? meta.name : "file";
-      a.click();
-    };
-    setProgress(1);
-    if (!meta?.sha256) showStatus("Файл получен. Нажмите «Скачать файл».", "ok");
-    sendProgress({ done: true, received: receivedSize, total: meta?.size || receivedSize, curSpeed: lastCurSpeed, avgSpeed: lastAvgSpeed, elapsed: (performance.now() - startTime) / 1000 });
-    // Close connection cleanly after transfer
-    setTimeout(() => {
-      if (conn && conn.open) conn.close();
-      if (peer && !peer.destroyed) peer.destroy();
-    }, 500);
-    return;
+if (data && data.done) {
+     const blob = new Blob(received, { type: meta ? meta.type : "application/octet-stream" });
+     
+     // Verify hash if provided by sender
+     if (meta && meta.sha256) {
+       showStatus("Проверка целостности (SHA-256)…");
+       try {
+         const hashBuffer = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
+         const computedHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+         if (computedHex.toLowerCase() === meta.sha256.toLowerCase()) {
+           showStatus("✅ Хеш совпадает — файл цел!", "ok");
+         } else {
+           showStatus("❌ ОШИБКА: Хеш НЕ совпадает! Файл повреждён.", "err");
+           console.error("Expected:", meta.sha256, "Got:", computedHex);
+         }
+       } catch (e) {
+         showStatus("⚠️ Не удалось проверить хеш: " + e, "err");
+       }
+     }
+     
+     blobUrl = URL.createObjectURL(blob);
+     const btn = $("dlBtn");
+     btn.disabled = false;
+     btn.onclick = () => {
+       const a = document.createElement("a");
+       a.href = blobUrl;
+       a.download = meta ? meta.name : "file";
+       a.click();
+     };
+     setProgress(1);
+     if (!meta?.sha256) showStatus("Файл получен. Нажмите «Скачать файл».", "ok");
+     // Keep connection open
+     return;
   }
   if (data instanceof ArrayBuffer) {
     received.push(data);
