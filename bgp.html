@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang='ru'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>BGP Trace — маршрут между двумя IP</title>
+<style>
+:root{--bg:#0b0f14;--panel:#111821;--panel2:#16202b;--line:#233241;--text:#e6edf3;--muted:#8b98a5;--green:#3fb950;--cyan:#39c5cf;--amber:#d29922;--red:#f85149;--accent:#2f81f7}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 50% -200px,#132030 0%,var(--bg) 60%);color:var(--text);font-family:Segoe UI,system-ui,-apple-system,sans-serif;min-height:100vh}
+header{padding:28px 20px 10px;text-align:center}
+h1{margin:0;font-size:26px;letter-spacing:.5px}
+h1 span{color:var(--green)}
+.sub{color:var(--muted);font-size:13px;margin-top:6px}
+main{max-width:1500px;margin:0 auto;padding:10px 20px 60px}
+.inputs{display:flex;gap:14px;align-items:flex-end;justify-content:center;flex-wrap:wrap;margin:22px 0 8px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:260px}
+.field label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.field input{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:12px 14px;border-radius:10px;font-size:16px;font-family:Consolas,monospace;outline:none;transition:.15s}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,129,247,.18)}
+.actions{display:flex;gap:10px}
+button{cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:12px 18px;font-size:14px;font-weight:600;transition:.15s}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover{filter:brightness(1.1)}
+button.ghost{padding:10px 12px;font-weight:500;color:var(--muted)}
+button:disabled{opacity:.5;cursor:wait}
+.status{min-height:24px;text-align:center;font-size:13px;color:var(--muted);margin:10px 0}
+.status.err{color:var(--red)}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.5px}
+.badge.demo{background:rgba(210,153,34,.15);color:var(--amber);border:1px solid rgba(210,153,34,.4)}
+.badge.live{background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.35)}
+.graph-wrap{position:relative;background:linear-gradient(180deg,rgba(22,32,43,.55),rgba(17,24,33,.75));border:1px solid var(--line);border-radius:16px;padding:26px 16px;margin-top:14px;overflow-x:auto}
+.graph-head{display:flex;justify-content:space-between;align-items:center;margin:0 auto 14px;padding:0 6px;color:var(--muted);font-size:12px;letter-spacing:.8px;text-transform:uppercase}
+.path-row{display:flex;align-items:center;justify-content:center;min-width:max-content;margin:0 auto;padding:8px 0}
+.node{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:118px;max-width:170px;padding:12px 10px;border-radius:12px;border:1px solid var(--line);background:var(--panel);text-align:center}
+.node .as{font-family:Consolas,monospace;font-size:13px;font-weight:700;color:var(--text)}
+.node .name{font-size:11px;color:var(--muted);line-height:1.25;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.node.transit{border-style:dashed;background:rgba(17,24,33,.85)}
+.node.tier1{border-color:rgba(210,153,34,.55);box-shadow:inset 0 0 18px rgba(210,153,34,.08)}
+.node.endpoint{min-width:160px;padding:14px 12px;border-width:2px}
+.node.endpoint.left{border-color:rgba(63,185,80,.7);background:linear-gradient(180deg,rgba(63,185,80,.10),var(--panel))}
+.node.endpoint.right{border-color:rgba(57,197,207,.7);background:linear-gradient(180deg,rgba(57,197,207,.10),var(--panel))}
+.node.endpoint.left .icon{color:var(--green)}
+.node.endpoint.right .icon{color:var(--cyan)}
+.node .icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;margin-bottom:2px}
+.node .tag{position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);background:var(--bg);padding:0 6px}
+.arrow{flex:0 0 42px;height:2px;position:relative;background:linear-gradient(90deg,var(--line),var(--line));margin:0 2px}
+.arrow:after{content:'';position:absolute;right:-1px;top:-4px;border-left:7px solid var(--line);border-top:5px solid transparent;border-bottom:5px solid transparent}
+.legend{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:16px;color:var(--muted);font-size:12px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.details{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h3{margin:0 0 10px;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed rgba(35,50,65,.7);font-size:13px}
+.kv:last-child{border-bottom:0}
+.kv .k{color:var(--muted)}
+.kv .v{font-family:Consolas,monospace;text-align:right;word-break:break-all}
+.aspath{font-family:Consolas,monospace;font-size:14px;line-height:1.9;word-break:break-word}
+.aspath b{color:var(--green)}
+.muted{color:var(--muted)}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:26px}
+@media (max-width:640px){.field{min-width:100%}.inputs{align-items:stretch}.actions{width:100%}.actions button{flex:1}}
+</style>
+</head>
+<body>
+<header>
+  <h1><span>BGP</span> Trace</h1>
+  <div class='sub'>Маршрут между двумя IP-адресами · данные RIPEstat / BGP Tools</div>
+</header>
+<main>
+  <section class='inputs'>
+    <div class='field'>
+      <label>IP слева · источник</label>
+      <input id='ipA' value='8.8.8.8' spellcheck='false' autocomplete='off'>
+    </div>
+    <div class='actions'>
+      <button id='traceBtn' class='primary'>Показать маршрут</button>
+      <button id='swapBtn' class='ghost' title='Поменять IP местами'>⇄</button>
+    </div>
+    <div class='field'>
+      <label>IP справа · назначение</label>
+      <input id='ipB' value='1.1.1.1' spellcheck='false' autocomplete='off'>
+    </div>
+  </section>
+  <div id='status' class='status'></div>
+  <section class='graph-wrap'>
+    <div class='graph-head'><span>Путь трафика</span><span id='modeBadge'></span></div>
+    <div id='graph'></div>
+    <div class='legend'>
+      <span><i style='background:#3fb950'></i>источник</span>
+      <span><i style='background:#39c5cf'></i>назначение</span>
+      <span><i style='background:#d29922'></i>Tier-1 / магистраль</span>
+      <span><i style='background:#233241'></i>транзитный AS</span>
+    </div>
+  </section>
+  <section id='details' class='details'></section>
+  <footer>Данные: RIPEstat (prefix-overview, looking-glass, as-overview). При недоступности API включается демо-режим.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const TIER1=new Set([174,3356,1299,2914,3257,6453,5511,6762,6830,7018,3491,3320,12956,6461,701,1239,2828,9002]);
+const nameCache=new Map();
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;');}
+function isIp(v){const p=String(v).trim().split('.');if(p.length!==4)return false;return p.every(x=>x!==''&&/^[0-9]+$/.test(x)&&Number(x)<=255);}
+function setStatus(t,err){const s=$('status');s.textContent=t;s.className='status'+(err?' err':'');}
+function setMode(kind,label){$('modeBadge').innerHTML=`<span class='badge ${kind}'>${esc(label)}</span>`;}
+async function getJson(url){const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),12000);try{const r=await fetch(url,{signal:ctrl.signal,headers:{Accept:'application/json'}});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json();}finally{clearTimeout(t);}}
+async function prefixInfo(ip){const j=await getJson('https://stat.ripe.net/data/prefix-overview/data.json?resource='+encodeURIComponent(ip));const d=j.data||{};const a=(d.asns&&d.asns[0])||{};return {ip:ip,prefix:d.resource||'',asn:a.asn?Number(a.asn):null,holder:a.holder||''};}
+async function asName(asn){if(nameCache.has(asn))return nameCache.get(asn);try{const j=await getJson('https://stat.ripe.net/data/as-overview/data.json?resource=AS'+asn);const h=(j.data&&j.data.holder)||'';nameCache.set(asn,h);return h;}catch(e){nameCache.set(asn,'');return '';}}
+async function pathsTo(ip){const j=await getJson('https://stat.ripe.net/data/looking-glass/data.json?resource='+encodeURIComponent(ip));const d=j.data||{};const out=[];(d.rrcs||[]).forEach(rrc=>{(rrc.peers||[]).forEach(p=>{if(!p.as_path)return;const arr=String(p.as_path).trim().split(' ').filter(Boolean).map(Number);if(arr.length)out.push({arr:arr,rrc:rrc.rrc||'',peer:p.ip||('AS'+p.asn)});});});const uniq=new Map();out.forEach(p=>{const k=p.arr.join(' ');if(!uniq.has(k))uniq.set(k,p);});return [...uniq.values()];}
+function serverIcon(){return `<svg width='26' height='26' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linecap='round'><rect x='3' y='4' width='18' height='7' rx='2'></rect><rect x='3' y='13' width='18' height='7' rx='2'></rect><circle cx='7' cy='7.5' r='1' fill='currentColor' stroke='none'></circle><circle cx='7' cy='16.5' r='1' fill='currentColor' stroke='none'></circle></svg>`;}
+function nodeEl(o){const el=document.createElement('div');el.className='node '+(o.cls||'');el.innerHTML=`${o.tag?`<span class='tag'>${esc(o.tag)}</span>`:''}${o.icon?`<div class='icon'>${serverIcon()}</div>`:''}<div class='as'>${esc(o.as||'')}</div>${o.name?`<div class='name' title='${esc(o.name)}'>${esc(o.name)}</div>`:''}${o.sub?`<div class='name'>${esc(o.sub)}</div>`:''}`;return el;}
+function asNodeEl(asn){const el=nodeEl({cls:'transit '+(TIER1.has(Number(asn))?'tier1':''),as:'AS'+asn,name:'…'});el.dataset.asn=asn;return el;}
+function arrowEl(){const s=document.createElement('span');s.className='arrow';return s;}
+async function fillNames(root){const nodes=[...root.querySelectorAll('[data-asn]')];const asns=[...new Set(nodes.map(n=>Number(n.dataset.asn)))];await Promise.all(asns.map(async a=>{const n=await asName(a);nodes.forEach(x=>{if(Number(x.dataset.asn)!==a)return;const el=x.querySelector('.name');if(el)el.textContent=n||'транзитный AS';});}));}
+function kv(k,v){return `<div class='kv'><span class='k'>${esc(k)}</span><span class='v'>${esc(v)}</span></div>`;}
+function renderGraph(ia,ib,path){const g=$('graph');g.innerHTML='';const row=document.createElement('div');row.className='path-row';row.appendChild(nodeEl({cls:'endpoint left',icon:true,tag:'источник',as:ia.asn?('AS'+ia.asn):'IP',name:ia.holder,sub:ia.ip}));const middle=path.slice();if(middle.length&&Number(middle[0])===Number(ia.asn))middle.shift();if(middle.length&&Number(middle[middle.length-1])===Number(ib.asn))middle.pop();middle.forEach(a=>{row.appendChild(arrowEl());row.appendChild(asNodeEl(a));});row.appendChild(arrowEl());row.appendChild(nodeEl({cls:'endpoint right',icon:true,tag:'назначение',as:ib.asn?('AS'+ib.asn):'IP',name:ib.holder,sub:ib.ip}));g.appendChild(row);}
+function renderDetails(ia,ib,path,meta,alts,demo){const d=$('details');const alt=alts&&alts.length?`<div class='card'><h3>Альтернативные пути</h3>${alts.map(p=>`<div class='aspath'>${p.map(a=>'AS'+a).join(' → ')}</div>`).join('')}</div>`:'';d.innerHTML=`<div class='card'><h3>Источник</h3>${kv('IP',ia.ip)}${kv('Префикс',ia.prefix||'—')}${kv('ASN',ia.asn?('AS'+ia.asn):'—')}${kv('Оператор',ia.holder||'—')}</div><div class='card'><h3>Назначение</h3>${kv('IP',ib.ip)}${kv('Префикс',ib.prefix||'—')}${kv('ASN',ib.asn?('AS'+ib.asn):'—')}${kv('Оператор',ib.holder||'—')}</div><div class='card'><h3>AS-путь</h3><div class='aspath'>${path.map(a=>`<b>AS${a}</b>`).join(' → ')}</div>${kv('Хопов',path.length)}${meta.rrc?kv('RIS collector',meta.rrc):''}${meta.peer?kv('BGP peer',meta.peer):''}${demo?`<div class='muted' style='margin-top:8px'>Демонстрационные данные</div>`:''}</div>${alt}`;}
+function normalize(path,ia,ib){const p=path.slice();if(ia.asn&&Number(p[0])!==Number(ia.asn))p.unshift(ia.asn);if(ib.asn&&Number(p[p.length-1])!==Number(ib.asn))p.push(ib.asn);const out=[];p.forEach(a=>{if(out.length===0||out[out.length-1]!==a)out.push(a);});return out;}
+async function trace(){const a=$('ipA').value.trim(),b=$('ipB').value.trim();if(!isIp(a)||!isIp(b)){setStatus('Введите два корректных IPv4-адреса.',true);return;}setStatus('Запрашиваю данные RIPEstat…');const btn=$('traceBtn');btn.disabled=true;try{const [ia,ib]=await Promise.all([prefixInfo(a),prefixInfo(b)]);const raw=await pathsTo(b);let cand=raw.slice();if(ia.asn){const wf=cand.filter(p=>p.arr.includes(Number(ia.asn)));if(wf.length)cand=wf.map(p=>({arr:p.arr.slice(p.arr.indexOf(Number(ia.asn))),rrc:p.rrc,peer:p.peer}));}if(ib.asn){const en=cand.filter(p=>Number(p.arr[p.arr.length-1])===Number(ib.asn));if(en.length)cand=en;}cand.sort((x,y)=>x.arr.length-y.arr.length);let path,meta={rrc:'',peer:''};if(cand.length){path=cand[0].arr;meta={rrc:cand[0].rrc,peer:cand[0].peer};}else{path=[];if(ia.asn)path.push(ia.asn);if(ib.asn&&ib.asn!==ia.asn)path.push(ib.asn);}path=normalize(path,ia,ib);const alts=[...new Set(cand.slice(1,5).map(p=>p.arr.join(' ')))].map(s=>s.split(' ').map(Number));renderGraph(ia,ib,path);renderDetails(ia,ib,path,meta,alts,false);setMode('live','LIVE · RIPEstat');setStatus('Готово · путей найдено: '+Math.max(cand.length,1));fillNames($('graph'));}catch(err){console.error(err);const ia={ip:a,prefix:a.split('.').slice(0,3).join('.')+'.0/24',asn:15169,holder:'Google LLC (демо)'};const ib={ip:b,prefix:b.split('.').slice(0,3).join('.')+'.0/24',asn:13335,holder:'Cloudflare, Inc. (демо)'};const path=[15169,3356,1299,13335];renderGraph(ia,ib,path);renderDetails(ia,ib,path,{rrc:'rrc00',peer:'demo'},[[15169,174,3356,13335],[15169,1299,13335]],true);setMode('demo','ДЕМО');setStatus('RIPEstat недоступен ('+(err&&err.message?err.message:'сеть/CORS')+'). Показан демонстрационный маршрут.',true);fillNames($('graph'));}finally{btn.disabled=false;}}
+$('traceBtn').addEventListener('click',trace);
+$('swapBtn').addEventListener('click',()=>{const t=$('ipA').value;$('ipA').value=$('ipB').value;$('ipB').value=t;trace();});
+$('ipA').addEventListener('keydown',e=>{if(e.key==='Enter')trace();});
+$('ipB').addEventListener('keydown',e=>{if(e.key==='Enter')trace();});
+trace();
+</script>
+</body>
+</html>
