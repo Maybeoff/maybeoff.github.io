@@ -1,0 +1,1762 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>MediaGrab — TikTok &amp; X Downloader</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ff4d9d'/%3E%3Cpath d='M25 18l23 14-23 14z' fill='%231a0910'/%3E%3C/svg%3E"
+    />
+    <style>
+:root {
+  --bg: #080a12;
+  --bg-soft: #0f1322;
+  --panel: rgba(18, 22, 38, 0.78);
+  --panel-strong: rgba(24, 29, 49, 0.92);
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --text: #eef1ff;
+  --muted: #9ba4c7;
+  --muted-2: #6f7899;
+  --pink: #ff4d9d;
+  --orange: #ff8a4c;
+  --cyan: #44e2ff;
+  --green: #59f2b2;
+  --red: #ff6b7d;
+  --radius: 22px;
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  --font: "Segoe UI", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.5;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255, 77, 157, 0.16), transparent 34rem),
+    radial-gradient(circle at 88% 8%, rgba(68, 226, 255, 0.13), transparent 32rem),
+    radial-gradient(circle at 50% 100%, rgba(255, 138, 76, 0.09), transparent 40rem),
+    var(--bg);
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: var(--cyan);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code {
+  padding: 0.1em 0.35em;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.88em;
+}
+
+.aurora {
+  position: fixed;
+  inset: -20vh -10vw auto;
+  height: 70vh;
+  pointer-events: none;
+  background:
+    radial-gradient(closest-side at 25% 50%, rgba(255, 77, 157, 0.18), transparent),
+    radial-gradient(closest-side at 72% 30%, rgba(68, 226, 255, 0.14), transparent);
+  filter: blur(40px);
+  z-index: -1;
+}
+
+.app {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 56px 0 40px;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 30px;
+  animation: rise 0.55s ease both;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  padding: 7px 12px 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.brand-mark {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--pink), var(--orange));
+  color: #170a10;
+  font-size: 0.72rem;
+}
+
+.brand-tag {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(68, 226, 255, 0.1);
+  color: var(--cyan);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+}
+
+h1 {
+  max-width: 780px;
+  margin: 0 auto;
+  font-size: clamp(2rem, 5vw, 3.7rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.06;
+}
+
+.grad {
+  background: linear-gradient(100deg, var(--pink), var(--orange) 45%, var(--cyan));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.subtitle {
+  max-width: 560px;
+  margin: 18px auto 0;
+  color: var(--muted);
+  font-size: clamp(0.92rem, 1.6vw, 1.04rem);
+}
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.search-panel {
+  padding: 22px;
+  animation: rise 0.65s 0.05s ease both;
+}
+
+.search-panel > form > label {
+  display: block;
+  margin: 0 0 9px 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+}
+
+input {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  outline: none;
+  background: rgba(7, 9, 17, 0.7);
+  color: var(--text);
+  padding: 14px 16px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+input::placeholder {
+  color: var(--muted-2);
+}
+
+input:focus {
+  border-color: rgba(68, 226, 255, 0.55);
+  background: rgba(7, 9, 17, 0.92);
+  box-shadow: 0 0 0 4px rgba(68, 226, 255, 0.09);
+}
+
+#submit {
+  position: relative;
+  display: inline-flex;
+  min-width: 136px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 22px;
+  background: linear-gradient(120deg, var(--pink), var(--orange));
+  color: #1a0910;
+  cursor: pointer;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  transition: transform 0.16s ease, filter 0.16s ease, opacity 0.16s ease;
+}
+
+#submit:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+#submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+#submit:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.spinner {
+  display: none;
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(26, 9, 16, 0.25);
+  border-top-color: #1a0910;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+#submit.loading .spinner {
+  display: block;
+}
+
+#submit.loading .button-label {
+  opacity: 0.65;
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding-left: 4px;
+  color: var(--muted-2);
+  font-size: 0.78rem;
+}
+
+.example {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--muted);
+  padding: 3px 10px;
+  cursor: pointer;
+  font-size: 0.76rem;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+
+.example:hover {
+  border-color: rgba(255, 77, 157, 0.45);
+  background: rgba(255, 77, 157, 0.08);
+  color: var(--text);
+}
+
+.settings {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.settings summary {
+  width: fit-content;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  user-select: none;
+}
+
+.settings summary:hover {
+  color: var(--text);
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.settings-grid label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.settings-grid input {
+  padding: 10px 12px;
+  border-radius: 11px;
+  font-size: 0.84rem;
+}
+
+.settings-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: fit-content;
+  margin-top: 13px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.settings-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--pink);
+}
+
+.muted {
+  color: var(--muted-2);
+}
+
+.hint {
+  margin: 10px 0 0;
+  color: var(--muted-2);
+  font-size: 0.75rem;
+}
+
+.status {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: 14px 16px;
+  animation: fade 0.25s ease both;
+}
+
+.status.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+}
+
+.status.ok {
+  border-color: rgba(89, 242, 178, 0.25);
+  background: rgba(89, 242, 178, 0.06);
+  color: var(--green);
+}
+
+.status.error {
+  border-color: rgba(255, 107, 125, 0.28);
+  background: rgba(255, 107, 125, 0.06);
+}
+
+.status.loading::before {
+  content: "";
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.error-box {
+  display: grid;
+  gap: 6px;
+}
+
+.error-title {
+  color: var(--red);
+  font-weight: 800;
+}
+
+.error-code {
+  color: var(--muted-2);
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.76rem;
+}
+
+.error-message {
+  color: var(--text);
+}
+
+.error-hint {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.result {
+  margin-top: 20px;
+  animation: rise 0.45s ease both;
+}
+
+.media-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.cover {
+  position: relative;
+  width: 74px;
+  height: 98px;
+  flex: none;
+  overflow: hidden;
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(255, 77, 157, 0.3), rgba(68, 226, 255, 0.18));
+}
+
+.cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-fallback {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.media-copy {
+  min-width: 0;
+}
+
+.media-title {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  font-size: clamp(1rem, 2.2vw, 1.28rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.media-author {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.verified {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cyan);
+  color: #051018;
+  font-size: 0.6rem;
+  font-weight: 900;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--muted);
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.chip.platform-tiktok {
+  border-color: rgba(68, 226, 255, 0.25);
+  background: rgba(68, 226, 255, 0.08);
+  color: var(--cyan);
+}
+
+.chip.platform-x {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.chip.resolver {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.68rem;
+}
+
+.chip.watermark-clean {
+  border-color: rgba(89, 242, 178, 0.35);
+  background: rgba(89, 242, 178, 0.1);
+  color: var(--green);
+}
+
+.chip.watermark-bad {
+  border-color: rgba(255, 138, 76, 0.38);
+  background: rgba(255, 138, 76, 0.11);
+  color: var(--orange);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--muted-2);
+  font-size: 0.76rem;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  margin-top: 18px;
+  align-items: start;
+}
+
+.preview-card {
+  position: relative;
+  display: grid;
+  min-height: 260px;
+  max-height: 560px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 77, 157, 0.12), transparent 55%),
+    #05060b;
+  box-shadow: var(--shadow);
+}
+
+.preview-card video {
+  width: 100%;
+  max-height: 558px;
+  background: #000;
+}
+
+.preview-card img {
+  display: block;
+  max-width: 100%;
+  max-height: 558px;
+  object-fit: contain;
+}
+
+.preview-card audio {
+  width: min(90%, 420px);
+}
+
+.preview-empty {
+  display: grid;
+  gap: 8px;
+  place-items: center;
+  padding: 32px;
+  color: var(--muted-2);
+  text-align: center;
+}
+
+.preview-empty strong {
+  color: var(--muted);
+}
+
+.preview-caption {
+  margin-top: 9px;
+  color: var(--muted-2);
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.formats-column {
+  display: grid;
+  gap: 14px;
+}
+
+.format-section {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  padding: 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+}
+
+.format-section h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.format-section h2 span {
+  color: var(--muted-2);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.format-list {
+  display: grid;
+  gap: 8px;
+}
+
+.format-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 10px 10px 12px;
+  background: rgba(255, 255, 255, 0.028);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.format-row:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.format-row.active {
+  border-color: rgba(68, 226, 255, 0.4);
+  background: rgba(68, 226, 255, 0.07);
+}
+
+.format-main {
+  min-width: 0;
+}
+
+.format-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  font-weight: 750;
+  font-size: 0.9rem;
+}
+
+.badge {
+  border-radius: 999px;
+  background: linear-gradient(120deg, var(--pink), var(--orange));
+  color: #1a0910;
+  padding: 2px 7px;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.format-meta {
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--muted-2);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.format-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.icon-button,
+.download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 7px 10px;
+  font-size: 0.74rem;
+  font-weight: 650;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+
+.download-button {
+  border-color: rgba(68, 226, 255, 0.25);
+  background: rgba(68, 226, 255, 0.08);
+  color: var(--cyan);
+}
+
+.icon-button:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.download-button:hover {
+  border-color: rgba(68, 226, 255, 0.55);
+  background: rgba(68, 226, 255, 0.15);
+  text-decoration: none;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.image-tile {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #05060b;
+  aspect-ratio: 1;
+  cursor: pointer;
+}
+
+.image-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.image-tile:hover img {
+  opacity: 0.8;
+  transform: scale(1.04);
+}
+
+.image-tile .image-download {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  border-radius: 8px;
+  background: rgba(8, 10, 18, 0.82);
+  padding: 4px 7px;
+  font-size: 0.68rem;
+}
+
+.raw {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+  padding: 10px 14px;
+}
+
+.raw summary {
+  color: var(--muted-2);
+  cursor: pointer;
+  font-size: 0.76rem;
+}
+
+.raw pre {
+  overflow: auto;
+  max-height: 360px;
+  margin: 12px 0 4px;
+  color: #cbd4ff;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 28px;
+  border-top: 1px solid var(--line);
+  padding: 16px 4px 0;
+  color: var(--muted-2);
+  font-size: 0.76rem;
+}
+
+.footer-left,
+.footer-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted-2);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.04);
+}
+
+.dot.ok {
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(89, 242, 178, 0.12);
+}
+
+.dot.error {
+  background: var(--red);
+  box-shadow: 0 0 0 3px rgba(255, 107, 125, 0.12);
+}
+
+.link-button {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+}
+
+.link-button:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.sep {
+  color: var(--muted-2);
+  opacity: 0.5;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 860px) {
+  .app {
+    padding-top: 34px;
+  }
+
+  .result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-card {
+    min-height: 220px;
+    max-height: 480px;
+  }
+
+  .preview-card video,
+  .preview-card img {
+    max-height: 478px;
+  }
+}
+
+@media (max-width: 600px) {
+  .app {
+    width: min(100% - 20px, 1120px);
+  }
+
+  .search-panel {
+    padding: 16px;
+  }
+
+  .input-row {
+    flex-direction: column;
+  }
+
+  #submit {
+    width: 100%;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .media-header {
+    grid-template-columns: 1fr;
+  }
+
+  .cover {
+    width: 100%;
+    height: 160px;
+  }
+
+  .format-row {
+    grid-template-columns: 1fr;
+  }
+
+  .format-actions {
+    justify-content: flex-start;
+  }
+
+  .image-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+  </style>
+  </head>
+  <body>
+    <div class="aurora" aria-hidden="true"></div>
+    <main class="app">
+      <header class="hero">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">▶</span>
+          <span>MediaGrab</span>
+          <span class="brand-tag">local</span>
+        </div>
+        <h1>Видео и фото из <span class="grad">TikTok</span> и <span class="grad">X</span></h1>
+        <p class="subtitle">
+          Локальный интерфейс к Cloudflare Worker API. Без сторонних резолверов, рекламы и трекеров.
+        </p>
+      </header>
+
+      <section class="panel search-panel">
+        <form id="resolve-form" novalidate>
+          <label for="url">Ссылка на пост или текст с ссылкой</label>
+          <div class="input-row">
+            <input
+              id="url"
+              name="url"
+              type="text"
+              inputmode="url"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="https://www.tiktok.com/@user/video/… или https://x.com/user/status/…"
+            />
+            <button id="submit" type="submit">
+              <span class="button-label">Получить</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="examples">
+            <span>Примеры:</span>
+            <button type="button" class="example" data-url="https://www.tiktok.com/@scout2015/video/6718335390845095173">
+              TikTok
+            </button>
+            <button type="button" class="example" data-url="https://x.com/SpaceX/status/1732824684683784516">
+              X / SpaceX
+            </button>
+          </div>
+        </form>
+
+        <details class="settings" id="settings">
+          <summary>Настройки API</summary>
+          <div class="settings-grid">
+            <label>
+              API base URL
+              <input id="api-base" type="url" spellcheck="false" autocomplete="off" />
+            </label>
+            <label>
+              API key <span class="muted">(если задан)</span>
+              <input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="необязательно" />
+            </label>
+          </div>
+          <label class="settings-check">
+            <input id="allow-watermark" type="checkbox" />
+            <span>Разрешить водяной знак, если чистое видео недоступно</span>
+          </label>
+          <p class="hint">
+            По умолчанию API отдаёт только файлы TikTok без водяного знака. Включите этот пункт только
+            как запасной вариант.
+          </p>
+          <p class="hint">
+            Ключ хранится только в <code>localStorage</code> этого браузера. Если API_KEY не задан на Worker,
+            оставьте поле пустым.
+          </p>
+        </details>
+      </section>
+
+      <section id="status" class="status hidden" aria-live="polite"></section>
+
+      <section id="result" class="result hidden" aria-live="polite">
+        <div id="media-header" class="media-header"></div>
+        <div class="result-grid">
+          <div class="preview-column">
+            <div id="preview" class="preview-card"></div>
+            <div id="preview-caption" class="preview-caption"></div>
+          </div>
+          <div class="formats-column">
+            <div id="formats"></div>
+          </div>
+        </div>
+        <details class="raw">
+          <summary>Показать JSON ответа</summary>
+          <pre id="raw"></pre>
+        </details>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-left">
+          <span class="dot" id="api-dot" aria-hidden="true"></span>
+          <span id="cors-state">CORS: не проверен</span>
+        </div>
+        <div class="footer-right">
+          <button id="check-api" type="button" class="link-button">Проверить API</button>
+          <span class="sep">·</span>
+          <a href="./" id="api-link" target="_blank" rel="noreferrer">API</a>
+        </div>
+      </footer>
+    </main>
+
+    <script type="module">
+const DEFAULT_API_BASE = "https://video-downloader-api.maybeyoou.workers.dev";
+const STORAGE_BASE = "mediagrab.apiBase";
+const STORAGE_KEY = "mediagrab.apiKey";
+const STORAGE_WATERMARK = "mediagrab.allowWatermark";
+
+const els = {
+  form: document.querySelector("#resolve-form"),
+  url: document.querySelector("#url"),
+  submit: document.querySelector("#submit"),
+  apiBase: document.querySelector("#api-base"),
+  apiKey: document.querySelector("#api-key"),
+  allowWatermark: document.querySelector("#allow-watermark"),
+  settings: document.querySelector("#settings"),
+  status: document.querySelector("#status"),
+  result: document.querySelector("#result"),
+  mediaHeader: document.querySelector("#media-header"),
+  preview: document.querySelector("#preview"),
+  previewCaption: document.querySelector("#preview-caption"),
+  formats: document.querySelector("#formats"),
+  raw: document.querySelector("#raw"),
+  corsState: document.querySelector("#cors-state"),
+  apiDot: document.querySelector("#api-dot"),
+  checkApi: document.querySelector("#check-api"),
+  apiLink: document.querySelector("#api-link"),
+};
+
+let statusTimer = 0;
+let activeRow = null;
+
+class ApiError extends Error {
+  constructor(code, message, details) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.details = details;
+  }
+}
+
+function normalizeBase(value) {
+  let raw = String(value || "").trim();
+  if (!raw) raw = DEFAULT_API_BASE;
+  if (!/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
+  return raw.replace(/\/+$/, "");
+}
+
+function endpoint(path, params = {}) {
+  const url = new URL(path, `${normalizeBase(els.apiBase.value)}/`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && String(value) !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  }
+  return url;
+}
+
+function withParam(url, key, value) {
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set(key, value);
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+function node(tag, className, text) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text !== undefined && text !== null) element.textContent = String(text);
+  return element;
+}
+
+function clear(element) {
+  element.replaceChildren();
+}
+
+function setCorsState(state, text) {
+  els.corsState.textContent = text;
+  els.apiDot.classList.remove("ok", "error");
+  if (state === "ok") els.apiDot.classList.add("ok");
+  if (state === "error") els.apiDot.classList.add("error");
+}
+
+function hideStatus() {
+  window.clearTimeout(statusTimer);
+  els.status.classList.add("hidden");
+  els.status.classList.remove("loading", "ok", "error");
+  clear(els.status);
+}
+
+function showStatus(kind, message, timeout = 0) {
+  window.clearTimeout(statusTimer);
+  els.status.classList.remove("hidden", "loading", "ok", "error");
+  els.status.classList.add(kind);
+  clear(els.status);
+  els.status.append(node("span", "", message));
+
+  if (timeout > 0) {
+    statusTimer = window.setTimeout(() => {
+      els.status.classList.add("hidden");
+    }, timeout);
+  }
+}
+
+function showErrorPanel(error) {
+  const code = error instanceof ApiError ? error.code : "NETWORK_ERROR";
+  const message =
+    error instanceof ApiError
+      ? error.message
+      : "Не удалось выполнить запрос. Проверьте интернет, адрес API и настройки CORS.";
+  const hint =
+    error instanceof ApiError
+      ? error.details?.hint
+      : "Сайт должен быть открыт через http://127.0.0.1:8080 (npm run site), а не напрямую через file://. Если API за прокси, проверьте системный прокси браузера.";
+  const watermarkHint =
+    error instanceof ApiError &&
+    ["TIKTOK_BLOCKED", "TIKTOK_EXTRACT_FAILED", "TIKTOK_NO_MEDIA"].includes(error.code)
+      ? "Если TikTok отдаёт только файл с водяным знаком, включите «Разрешить водяной знак» в настройках API и повторите запрос."
+      : "";
+
+  window.clearTimeout(statusTimer);
+  els.status.classList.remove("hidden", "loading", "ok");
+  els.status.classList.add("error");
+  clear(els.status);
+
+  const box = node("div", "error-box");
+  const title = node("div", "error-title", "Не получилось получить медиа");
+  const codeLine = node("div", "error-code", code);
+  const messageLine = node("div", "error-message", message);
+
+  box.append(title, codeLine, messageLine);
+
+  if (hint) box.append(node("div", "error-hint", hint));
+  if (watermarkHint) box.append(node("div", "error-hint", watermarkHint));
+
+  if (error instanceof ApiError && error.details && Object.keys(error.details).length > 0) {
+    const details = document.createElement("details");
+    details.className = "raw";
+    details.append(node("summary", "", "Детали ошибки"));
+    const pre = node("pre", "", JSON.stringify(error.details, null, 2));
+    details.append(pre);
+    box.append(details);
+  }
+
+  els.status.append(box);
+}
+
+function setLoading(loading) {
+  els.submit.disabled = loading;
+  els.submit.classList.toggle("loading", loading);
+  els.submit.querySelector(".button-label").textContent = loading ? "Загружаю" : "Получить";
+}
+
+function formatDuration(seconds) {
+  const value = Number(seconds);
+  if (!Number.isFinite(value) || value <= 0) return "";
+  const total = Math.round(value);
+  const minutes = Math.floor(total / 60);
+  const rest = String(total % 60).padStart(2, "0");
+  return minutes > 0 ? `${minutes}:${rest}` : `0:${rest}`;
+}
+
+function formatBytes(bytes) {
+  const value = Number(bytes);
+  if (!Number.isFinite(value) || value <= 0) return "";
+  const units = ["Б", "КБ", "МБ", "ГБ"];
+  let size = value;
+  let index = 0;
+  while (size >= 1024 && index < units.length - 1) {
+    size /= 1024;
+    index += 1;
+  }
+  return `${size >= 10 || index === 0 ? Math.round(size) : size.toFixed(1)} ${units[index]}`;
+}
+
+function formatBitrate(bits) {
+  const value = Number(bits);
+  if (!Number.isFinite(value) || value <= 0) return "";
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)} Мбит/с`;
+  return `${Math.round(value / 1000)} Кбит/с`;
+}
+
+function formatCount(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return "";
+  if (number >= 1_000_000) return `${(number / 1_000_000).toFixed(1)}M`;
+  if (number >= 1000) return `${(number / 1000).toFixed(1)}K`;
+  return String(Math.round(number));
+}
+
+function formatCodec(codec) {
+  const value = String(codec || "").trim().toLowerCase();
+  if (!value) return "";
+  if (/h264|avc/.test(value)) return "H.264";
+  if (/h265|hevc|hvc1/.test(value)) return "H.265";
+  if (/av1/.test(value)) return "AV1";
+  return value.toUpperCase();
+}
+
+function formatMeta(item) {
+  const parts = [];
+  if (item.width && item.height) parts.push(`${item.width}×${item.height}`);
+  if (item.mimeType) parts.push(item.mimeType);
+  const codec = formatCodec(item.codec);
+  if (codec) parts.push(codec);
+  if (item.bitrate) parts.push(formatBitrate(item.bitrate));
+  if (item.size) parts.push(formatBytes(item.size));
+  if (item.watermarked) parts.push("водяной знак");
+  return parts.join(" · ");
+}
+
+function addChip(container, text, className = "") {
+  if (!text) return;
+  container.append(node("span", `chip ${className}`.trim(), text));
+}
+
+function setActiveRow(row) {
+  if (activeRow === row) return;
+  activeRow?.classList.remove("active");
+  activeRow = row;
+  activeRow?.classList.add("active");
+}
+
+function renderPreview(item, data) {
+  clear(els.preview);
+  clear(els.previewCaption);
+
+  if (!item) {
+    const empty = node("div", "preview-empty");
+    empty.append(node("strong", "", "Предпросмотр недоступен"));
+    empty.append(node("span", "", "Выберите формат в списке справа."));
+    els.preview.append(empty);
+    els.previewCaption.textContent = "";
+    return;
+  }
+
+  const inlineUrl = withParam(item.url, "inline", "1");
+  const meta = formatMeta(item);
+
+  if (item.type === "video") {
+    const video = document.createElement("video");
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    video.src = inlineUrl;
+    if (data.thumbnail) video.poster = data.thumbnail;
+    video.addEventListener("error", () => {
+      clear(els.preview);
+      const empty = node("div", "preview-empty");
+      empty.append(node("strong", "", "Видео не загрузилось"));
+      empty.append(node("span", "", "CDN мог отклонить запрос. Попробуйте скачать файл."));
+      els.preview.append(empty);
+    });
+    els.preview.append(video);
+    els.previewCaption.textContent = [item.label, meta].filter(Boolean).join(" · ");
+    return;
+  }
+
+  if (item.type === "image") {
+    const image = document.createElement("img");
+    image.alt = data.title || "Изображение из поста";
+    image.loading = "eager";
+    image.src = inlineUrl;
+    image.addEventListener("error", () => {
+      clear(els.preview);
+      const empty = node("div", "preview-empty");
+      empty.append(node("strong", "", "Изображение не загрузилось"));
+      empty.append(node("span", "", "Попробуйте скачать файл напрямую."));
+      els.preview.append(empty);
+    });
+    els.preview.append(image);
+    els.previewCaption.textContent = meta || "Изображение";
+    return;
+  }
+
+  if (item.type === "audio") {
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.preload = "metadata";
+    audio.src = inlineUrl;
+    audio.addEventListener("error", () => {
+      clear(els.preview);
+      const empty = node("div", "preview-empty");
+      empty.append(node("strong", "", "Аудио не загрузилось"));
+      empty.append(node("span", "", "Попробуйте скачать файл напрямую."));
+      els.preview.append(empty);
+    });
+    els.preview.append(audio);
+    els.previewCaption.textContent = [item.label, meta].filter(Boolean).join(" · ");
+  }
+}
+
+function createDownloadButton(item, label = "Скачать") {
+  const link = node("a", "download-button", label);
+  link.href = item.url;
+  link.setAttribute("download", item.filename || "");
+  link.rel = "noreferrer";
+  return link;
+}
+
+function createCopyButton(item) {
+  const button = node("button", "icon-button", "Копировать");
+  button.type = "button";
+  button.title = "Скопировать прямую ссылку на скачивание";
+  button.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    await copyText(item.url);
+  });
+  return button;
+}
+
+function createFormatRow(item, data, options = {}) {
+  const row = node("div", "format-row");
+  row.tabIndex = 0;
+  row.setAttribute("role", "button");
+  row.setAttribute("aria-label", `Предпросмотр ${item.label || item.id}`);
+
+  const main = node("div", "format-main");
+  const label = node("div", "format-label");
+  if (options.best) label.append(node("span", "badge", "best"));
+  label.append(node("span", "", item.label || item.id || "формат"));
+
+  const metaText = formatMeta(item) || item.mimeType || "";
+  main.append(label);
+  if (metaText) main.append(node("div", "format-meta", metaText));
+
+  const actions = node("div", "format-actions");
+  actions.append(createCopyButton(item), createDownloadButton(item));
+  row.append(main, actions);
+
+  const select = () => {
+    setActiveRow(row);
+    renderPreview(item, data);
+    if (window.matchMedia("(max-width: 860px)").matches) {
+      els.preview.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
+  row.addEventListener("click", (event) => {
+    if (event.target.closest("a, button")) return;
+    select();
+  });
+  row.addEventListener("keydown", (event) => {
+    if (event.target.closest("a, button")) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      select();
+    }
+  });
+
+  return row;
+}
+
+function createImageTile(item, data) {
+  const tile = node("div", "image-tile");
+  tile.tabIndex = 0;
+  tile.setAttribute("role", "button");
+  tile.setAttribute("aria-label", `Предпросмотр ${item.label || item.id}`);
+
+  const image = document.createElement("img");
+  image.alt = item.filename || item.label || "Изображение";
+  image.loading = "lazy";
+  image.src = withParam(item.url, "inline", "1");
+
+  const download = node("a", "image-download", "Скачать");
+  download.href = item.url;
+  download.setAttribute("download", item.filename || "");
+  download.rel = "noreferrer";
+  download.addEventListener("click", (event) => event.stopPropagation());
+
+  tile.append(image, download);
+
+  const select = () => {
+    renderPreview(item, data);
+    if (window.matchMedia("(max-width: 860px)").matches) {
+      els.preview.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
+  tile.addEventListener("click", select);
+  tile.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      select();
+    }
+  });
+
+  return tile;
+}
+
+function createSection(title, subtitle) {
+  const section = node("section", "format-section");
+  const heading = node("h2", "", title);
+  if (subtitle) heading.append(node("span", "", subtitle));
+  section.append(heading);
+  return section;
+}
+
+function renderFormats(data) {
+  clear(els.formats);
+
+  const formats = Array.isArray(data.formats) ? data.formats : [];
+  const variants = Array.isArray(data.variants) ? data.variants : [];
+  const videos = formats.filter((format) => format.type === "video");
+  const audio = formats.filter((format) => format.type === "audio");
+  const images = formats.filter((format) => format.type === "image");
+
+  const videoItems = variants.length > 0 ? variants : videos;
+  if (videoItems.length > 0) {
+    const section = createSection("Видео", `${videoItems.length} вариант(а)`);
+    const list = node("div", "format-list");
+    videoItems.forEach((item, index) => {
+      list.append(createFormatRow(item, data, { best: index === 0 }));
+    });
+    section.append(list);
+    els.formats.append(section);
+  }
+
+  if (audio.length > 0) {
+    const section = createSection("Аудио", `${audio.length}`);
+    const list = node("div", "format-list");
+    audio.forEach((item) => list.append(createFormatRow(item, data, { best: false })));
+    section.append(list);
+    els.formats.append(section);
+  }
+
+  if (images.length > 0) {
+    const section = createSection("Фото", `${images.length}`);
+    const grid = node("div", "image-grid");
+    images.forEach((item) => grid.append(createImageTile(item, data)));
+    section.append(grid);
+    els.formats.append(section);
+  }
+
+  if (videoItems.length === 0 && audio.length === 0 && images.length === 0) {
+    const empty = node("div", "format-section");
+    empty.append(node("h2", "", "Форматы"));
+    empty.append(node("div", "format-meta", "API не вернул доступных форматов."));
+    els.formats.append(empty);
+  }
+}
+
+function renderResult(data) {
+  clear(els.mediaHeader);
+  clear(els.preview);
+  clear(els.previewCaption);
+  clear(els.formats);
+
+  const header = els.mediaHeader;
+  const cover = node("div", "cover");
+  const coverUrl = data.thumbnail || data.author?.avatar || "";
+  if (coverUrl) {
+    const image = document.createElement("img");
+    image.alt = "";
+    image.loading = "eager";
+    image.referrerPolicy = "no-referrer";
+    image.src = coverUrl;
+    image.addEventListener("error", () => {
+      clear(cover);
+      cover.append(node("div", "cover-fallback", data.platform === "tiktok" ? "TT" : "X"));
+    });
+    cover.append(image);
+  } else {
+    cover.append(node("div", "cover-fallback", data.platform === "tiktok" ? "TT" : "X"));
+  }
+
+  const copy = node("div", "media-copy");
+  const title = node("h2", "media-title", data.title || `${data.platform} ${data.type}`);
+  const author = node("div", "media-author");
+  if (data.author?.username) author.append(node("span", "", `@${data.author.username}`));
+  if (data.author?.nickname) author.append(node("span", "muted", data.author.nickname));
+  if (data.author?.verified) {
+    const verified = node("span", "verified", "✓");
+    verified.title = "Подтверждённый аккаунт";
+    author.append(verified);
+  }
+
+  const chips = node("div", "chips");
+  const platform = data.platform === "tiktok" ? "TikTok" : data.platform === "x" ? "X / Twitter" : data.platform;
+  addChip(chips, platform, data.platform === "tiktok" ? "platform-tiktok" : "platform-x");
+  addChip(chips, data.type === "video" ? "видео" : data.type === "image" || data.type === "photo" ? "фото" : data.type);
+  if (data.platform === "tiktok" && data.type === "video") {
+    if (data.watermarked === true) {
+      addChip(chips, "с водяным знаком", "watermark-bad");
+    } else if (data.watermarked === false) {
+      addChip(chips, "без водяного знака", "watermark-clean");
+    }
+  }
+  const duration = formatDuration(data.duration);
+  if (duration) addChip(chips, duration);
+  if (data.width && data.height) addChip(chips, `${data.width}×${data.height}`);
+  if (data.hlsOnly) addChip(chips, "только HLS");
+  if (data.resolver) addChip(chips, data.resolver, "resolver");
+
+  const stats = node("div", "stats");
+  const statItems = [
+    ["▶", data.stats?.plays],
+    ["♥", data.stats?.likes],
+    ["💬", data.stats?.comments],
+    ["↗", data.stats?.shares],
+  ];
+  for (const [icon, value] of statItems) {
+    const count = formatCount(value);
+    if (count) stats.append(node("span", "", `${icon} ${count}`));
+  }
+
+  copy.append(title, author, chips);
+  if (stats.childElementCount > 0) copy.append(stats);
+  header.append(cover, copy);
+
+  const firstVideo = (Array.isArray(data.variants) && data.variants[0]) ||
+    (Array.isArray(data.formats) ? data.formats.find((format) => format.type === "video") : null);
+  const firstImage = Array.isArray(data.formats) ? data.formats.find((format) => format.type === "image") : null;
+  const firstAudio = Array.isArray(data.formats) ? data.formats.find((format) => format.type === "audio") : null;
+  const initial = firstVideo || firstImage || firstAudio || null;
+
+  renderPreview(initial, data);
+  renderFormats(data);
+  els.raw.textContent = JSON.stringify(data, null, 2);
+  els.result.classList.remove("hidden");
+
+  const firstRow = els.formats.querySelector(".format-row");
+  if (firstRow) setActiveRow(firstRow);
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showStatus("ok", "Ссылка скопирована в буфер обмена.", 2500);
+  } catch {
+    window.prompt("Скопируйте ссылку:", text);
+  }
+}
+
+async function checkApi({ silent = false } = {}) {
+  const base = normalizeBase(els.apiBase.value);
+  setCorsState("checking", "CORS: проверка…");
+  const started = performance.now();
+
+  try {
+    const response = await fetch(endpoint("health"), {
+      cache: "no-store",
+      headers: { accept: "application/json" },
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const ms = Math.round(performance.now() - started);
+    const mode = response.type === "cors" ? "cross-origin" : response.type;
+    setCorsState("ok", `CORS: OK · ${mode} · ${ms} ms`);
+    if (!silent) {
+      showStatus("ok", `API доступен: ${data?.service || "worker"} · ${ms} ms`, 4000);
+    }
+  } catch (error) {
+    setCorsState("error", "CORS: ошибка / API недоступен");
+    if (!silent) {
+      showStatus("error", `API недоступен: ${error?.message || String(error)}`);
+    }
+  }
+}
+
+async function resolveSource(source) {
+  const value = String(source || "").trim();
+  if (!value) {
+    showStatus("error", "Вставьте ссылку на пост TikTok или X.");
+    els.url.focus();
+    return;
+  }
+
+  const base = normalizeBase(els.apiBase.value);
+  els.apiBase.value = base;
+  persistSettings();
+
+  setLoading(true);
+  els.result.classList.add("hidden");
+  showStatus("loading", "Запрашиваю метаданные и форматы…");
+
+  try {
+    const response = await fetch(
+      endpoint("info", {
+        url: value,
+        key: els.apiKey.value.trim(),
+        watermark: els.allowWatermark.checked ? "1" : "",
+      }),
+      {
+        cache: "no-store",
+        headers: { accept: "application/json" },
+      },
+    );
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.ok) {
+      const details = data?.error?.details;
+      throw new ApiError(
+        data?.error?.code || `HTTP_${response.status}`,
+        data?.error?.message || `API вернул HTTP ${response.status}.`,
+        details,
+      );
+    }
+
+    const mode = response.type === "cors" ? "cross-origin" : response.type;
+    setCorsState("ok", `CORS: OK · ${mode}`);
+    renderResult(data);
+    showStatus("ok", `Готово · ${data.resolver || data.platform}`, 3500);
+
+    const current = new URL(location.href);
+    current.searchParams.set("url", value);
+    history.replaceState(null, "", current);
+  } catch (error) {
+    els.result.classList.add("hidden");
+    setCorsState("error", "CORS: ошибка / запрос не выполнен");
+    showErrorPanel(error);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function persistSettings() {
+  const base = normalizeBase(els.apiBase.value);
+  const key = els.apiKey.value.trim();
+  const allowWatermark = els.allowWatermark.checked;
+  els.apiBase.value = base;
+  try {
+    localStorage.setItem(STORAGE_BASE, base);
+    localStorage.setItem(STORAGE_KEY, key);
+    localStorage.setItem(STORAGE_WATERMARK, allowWatermark ? "1" : "0");
+  } catch {
+    // localStorage may be unavailable in private mode.
+  }
+  els.apiLink.href = `${base}/`;
+  els.apiLink.textContent = base.replace(/^https?:\/\//, "");
+}
+
+function loadSettings() {
+  let base = DEFAULT_API_BASE;
+  let key = "";
+  let allowWatermark = false;
+  try {
+    base = localStorage.getItem(STORAGE_BASE) || DEFAULT_API_BASE;
+    key = localStorage.getItem(STORAGE_KEY) || "";
+    allowWatermark = localStorage.getItem(STORAGE_WATERMARK) === "1";
+  } catch {
+    // Ignore storage errors.
+  }
+  els.apiBase.value = normalizeBase(base);
+  els.apiKey.value = key;
+  els.allowWatermark.checked = allowWatermark;
+  if (els.apiBase.value !== DEFAULT_API_BASE || key || allowWatermark) els.settings.open = true;
+  persistSettings();
+}
+
+function bindEvents() {
+  els.form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    resolveSource(els.url.value);
+  });
+
+  for (const button of document.querySelectorAll(".example")) {
+    button.addEventListener("click", () => {
+      els.url.value = button.dataset.url || "";
+      els.url.focus();
+    });
+  }
+
+  els.apiBase.addEventListener("change", () => {
+    persistSettings();
+    checkApi({ silent: true });
+  });
+  els.apiKey.addEventListener("change", persistSettings);
+  els.allowWatermark.addEventListener("change", persistSettings);
+  els.checkApi.addEventListener("click", () => checkApi());
+}
+
+function handleDeepLink() {
+  const params = new URLSearchParams(location.search);
+  const url = params.get("url");
+  if (!url) return;
+  els.url.value = url;
+  resolveSource(url);
+}
+
+loadSettings();
+bindEvents();
+checkApi({ silent: true });
+handleDeepLink();
+
+  </script>
+  </body>
+</html>
